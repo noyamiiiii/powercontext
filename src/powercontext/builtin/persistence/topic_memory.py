@@ -40,6 +40,7 @@ from powercontext.builtin.artifacts.topic_memory import (
     TopicMemoryDraft,
     TopicMemoryProjection,
     TopicMemoryProjectionError,
+    TopicMemorySearchHit,
     TopicMemorySearchMode,
     TopicMemorySearchRequest,
     TopicMemorySearchResult,
@@ -54,6 +55,7 @@ from powercontext.builtin.persistence.supervision import database_utc_now
 from powercontext.builtin.persistence.tables import (
     ARTIFACT_HEADS_TABLE,
     ARTIFACTS_TABLE,
+    SOURCE_LIFECYCLE_TOPIC_STATUS_TABLE,
     TOPIC_MEMORY_ACTIVE_CHUNKS_TABLE,
     TOPIC_MEMORY_ACTIVE_TOPICS_TABLE,
     TOPIC_MEMORY_RETRIEVAL_SHAPE_TABLE,
@@ -489,16 +491,40 @@ class TopicMemoryRepository:
         channels = await self.index.search(connection, scope_id, request)
         await self._check_retrieval_shape(connection)
         outcome = _fuse_topic_memory_rankings(query, channels, limit, mode=used_mode, admission=admission)
+        hits = await self._filter_lifecycle_topics(connection, scope_id, outcome.hits)
         return TopicMemorySearchResult(
             mode=used_mode,
-            hits=outcome.hits,
+            hits=hits,
             admission=AdmissionCounts(
                 family=TopicMemory.family,
                 scope_id=scope_id,
                 retrieved=outcome.retrieved,
-                admitted=outcome.admitted,
+                admitted=max(0, outcome.admitted - (len(outcome.hits) - len(hits))),
                 rejected=outcome.rejected,
             ),
+        )
+
+    async def _filter_lifecycle_topics(
+        self,
+        connection: AsyncConnection,
+        scope_id: str,
+        hits: tuple[TopicMemorySearchHit, ...],
+    ) -> tuple[TopicMemorySearchHit, ...]:
+        if not hits:
+            return ()
+        statuses = SOURCE_LIFECYCLE_TOPIC_STATUS_TABLE
+        artifact_ids = tuple({hit.artifact_ref.artifact_id for hit in hits})
+        rows = (
+            await connection.execute(
+                select(statuses.c.artifact_id, statuses.c.revision, statuses.c.available).where(
+                    statuses.c.scope_id == scope_id,
+                    statuses.c.artifact_id.in_(artifact_ids),
+                )
+            )
+        ).all()
+        unavailable = {(str(artifact_id), int(revision)) for artifact_id, revision, available in rows if not available}
+        return tuple(
+            hit for hit in hits if (hit.artifact_ref.artifact_id, hit.artifact_ref.revision) not in unavailable
         )
 
     async def _activate(
