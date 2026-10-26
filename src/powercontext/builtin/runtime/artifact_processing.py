@@ -67,6 +67,7 @@ from powercontext.builtin.runtime.processing_contracts import (
     ArtifactProcessingWorkerOutcome,
     WorkerEntrypoint,
 )
+from powercontext.builtin.runtime.processing_discovery import count_eligible_scopes
 from powercontext.builtin.runtime.protocols import RuntimeTracing
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,7 @@ _DISCOVERY_PAGE_DELAY_SECONDS = 0.01
 _DISCOVERY_TIMEOUT_SECONDS = 2.0
 _SPAWN_SIGTERM_GRACE_SECONDS = 1.0
 _WORKER_SHUTDOWN_TIMEOUT_SECONDS = 5.0
+_COUNT_TRIGGER_POLL_SECONDS = 0.25
 ProcessingKey = tuple[str, str]
 
 
@@ -110,6 +112,7 @@ class ArtifactProcessingBinding:
     max_workers: int = 1
     worker_timeout_seconds: float = 600.0
     automatic_processing_interval: timedelta | None = None
+    source_count_threshold: int | None = None
     cron: str | None = None
     timezone: str = "Asia/Shanghai"
     config_prefix: str | None = None
@@ -118,7 +121,7 @@ class ArtifactProcessingBinding:
     # their own Worker authorization and domain completion semantics.
     automatic_scope_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: C901 - validate one immutable binding
         if not self.binding_name or self.binding_name != self.binding_name.strip():
             raise ValueError("binding_name must be nonempty and trimmed")  # noqa: TRY003
         if re.fullmatch(r"[a-z][a-z0-9-]*", self.artifact_family) is None:
@@ -138,6 +141,10 @@ class ArtifactProcessingBinding:
                 raise ValueError("interval and cron cannot both be enabled")  # noqa: TRY003
         if self.cron is not None:
             CronTrigger.from_crontab(self.cron, timezone=ZoneInfo(self.timezone))
+        if self.source_count_threshold is not None and (
+            type(self.source_count_threshold) is not int or self.source_count_threshold <= 0
+        ):
+            raise ValueError("source_count_threshold must be a positive integer")  # noqa: TRY003
 
 
 class _WorkerResultSender(Protocol):
@@ -392,6 +399,7 @@ class _FamilyState:
     running: dict[str, _RunningWorker] = field(default_factory=dict)
     retries: dict[str, _RetryState] = field(default_factory=dict)
     requested_after: int = 0
+    count_scan_after: int = 0
     scan_after: int = 0
     scan_generation: int = 0
     scan_in_progress: bool = False
@@ -400,6 +408,7 @@ class _FamilyState:
     notification_at_start: int = 0
     discovery_pending: bool = True
     next_schedule_at: float | None = None
+    next_count_check_at: float | None = None
     next_discovery_at: float = 0.0
     automatic_next: bool = False
     overflow_not_before: float = 0.0
@@ -585,6 +594,7 @@ class ArtifactProcessingSupervisor:
             state.discovery_pending = True
             state.reconcile_complete = False
             state.reconcile_after = None
+            state.next_count_check_at = 0.0 if state.binding.source_count_threshold is not None else None
         if self._lease_mode == "oceanbase":
             self._renew_task = asyncio.create_task(self._renew(), name=f"artifact-lease-{self._supervisor_group}")
 
@@ -648,6 +658,8 @@ class ArtifactProcessingSupervisor:
                 state.next_discovery_at = loop.time() + _DISCOVERY_PAGE_DELAY_SECONDS
         else:
             state.reconcile_complete = True
+        if binding.source_count_threshold is not None:
+            await self._discover_count(state)
         # Alternate discovery channels so explicit traffic cannot monopolize admission.
         state.automatic_next = not state.automatic_next
         if state.automatic_next:
@@ -656,6 +668,63 @@ class ArtifactProcessingSupervisor:
         else:
             await self._discover_requested(state)
             await self._discover_automatic(state)
+
+    async def _discover_count(self, state: _FamilyState) -> None:
+        threshold = state.binding.source_count_threshold
+        if threshold is None:
+            return
+        loop = asyncio.get_running_loop()
+        now = loop.time()
+        if state.next_count_check_at is not None and now < state.next_count_check_at:
+            return
+        state.next_count_check_at = now + _COUNT_TRIGGER_POLL_SECONDS
+        capacity = self._fresh_capacity(state)
+        if capacity <= 0:
+            return
+
+        requested: list[str] = []
+        next_scan_after = state.count_scan_after
+        async with self._database.transaction() as connection:
+            await self._leases.require_fence(connection, self._require_current_fence())
+            rows = await self._intents.scan(
+                connection,
+                state.binding.binding_name,
+                after_sequence=state.count_scan_after,
+                limit=min(capacity, _DISCOVERY_PAGE_SIZE),
+                dirty_only=True,
+            )
+            if rows:
+                next_scan_after = rows[-1].pending_sequence
+            if len(rows) < min(capacity, _DISCOVERY_PAGE_SIZE):
+                next_scan_after = 0
+            candidates = tuple(
+                row.scope_id
+                for row in rows
+                if row.requested_generation <= row.handled_generation
+                and row.scope_id not in state.queued
+                and row.scope_id not in state.running
+                and row.scope_id not in state.retries
+            )
+            eligible = await count_eligible_scopes(connection, candidates, state.binding.binding_name, threshold)
+            for scope_id in sorted(eligible):
+                current = await self._intents.load(
+                    connection,
+                    scope_id,
+                    state.binding.binding_name,
+                    for_update=True,
+                )
+                if (
+                    current is None
+                    or current.dirty_generation <= current.clean_generation
+                    or current.requested_generation > current.handled_generation
+                ):
+                    continue
+                await self._intents.request(connection, scope_id, state.binding.binding_name)
+                requested.append(scope_id)
+        state.count_scan_after = next_scan_after
+        if requested:
+            state.discovery_pending = True
+            self.wake(state.binding.binding_name)
 
     async def _discover_requested(self, state: _FamilyState) -> None:
         capacity = self._fresh_capacity(state)
@@ -1058,6 +1127,7 @@ class ArtifactProcessingSupervisor:
             state.overflow_not_before = 0.0
             state.retries.clear()
             state.requested_after = state.scan_after = state.scan_generation = 0
+            state.count_scan_after = 0
             state.scan_in_progress = False
             state.discovery_pending = True
 
@@ -1093,6 +1163,8 @@ class ArtifactProcessingSupervisor:
                 continue
             if state.next_schedule_at is not None:
                 deadlines.append(state.next_schedule_at)
+            if state.next_count_check_at is not None:
+                deadlines.append(state.next_count_check_at)
             if state.discovery_pending or state.scan_in_progress or not state.reconcile_complete or state.degraded:
                 deadlines.append(max(now, state.next_discovery_at))
         return None if not deadlines else max(0.001, min(deadlines) - now)
@@ -1147,7 +1219,7 @@ def _schedule_deadline(
     trigger = CronTrigger.from_crontab(binding.cron, timezone=ZoneInfo(binding.timezone))
     first = trigger.get_next_fire_time(None, (checkpoint + timedelta(microseconds=1)).replace(tzinfo=UTC))
     if first is None:
-        return None, datetime.max.replace(tzinfo=None)
+        return None, datetime.max.replace(tzinfo=None)  # noqa: DTZ901 - persistence uses naive UTC
     first = first.astimezone(UTC).replace(tzinfo=None)
     if first > now:
         return None, first
@@ -1164,8 +1236,11 @@ def _schedule_deadline(
         else:
             hi = mid
     following = trigger.get_next_fire_time(None, (latest + timedelta(microseconds=1)).replace(tzinfo=UTC))
-    return latest, datetime.max.replace(tzinfo=None) if following is None else following.astimezone(UTC).replace(
-        tzinfo=None
+    return (
+        latest,
+        datetime.max.replace(tzinfo=None)  # noqa: DTZ901 - persistence uses naive UTC
+        if following is None
+        else following.astimezone(UTC).replace(tzinfo=None),
     )
 
 

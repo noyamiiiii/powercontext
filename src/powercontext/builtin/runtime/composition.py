@@ -562,6 +562,7 @@ async def open_builtin_runtime(
                         "family": b.artifact_family,
                         "workers": b.max_workers,
                         "timeout_seconds": b.worker_timeout_seconds,
+                        "source_count_threshold": b.source_count_threshold,
                         "interval_seconds": None
                         if b.automatic_processing_interval is None
                         else b.automatic_processing_interval.total_seconds(),
@@ -719,6 +720,10 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
         "profile": config.runtime.profile_schedule_enabled or None,
         "skill": None,
     }
+    source_count_thresholds = {
+        "memory": config.runtime.memory_source_count_threshold,
+        "topic-memory": config.runtime.topic_memory_source_count_threshold,
+    }
     for family, schedule in automatic.items():
         if schedule is not None and family not in declared | registered:
             if (
@@ -779,6 +784,7 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
                 max_workers=getattr(config.runtime, f"{prefix}_max_workers"),
                 worker_timeout_seconds=getattr(config.runtime, f"{prefix}_worker_timeout_seconds"),
                 automatic_processing_interval=None if interval is None else timedelta(seconds=float(interval)),
+                source_count_threshold=source_count_thresholds.get(family),
                 cron=config.runtime.profile_cron
                 if family == "profile" and config.runtime.profile_schedule_enabled
                 else None,
