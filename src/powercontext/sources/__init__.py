@@ -39,10 +39,18 @@ from powercontext.sources.observations import (
     manifest_for_definition,
     project_source_for_transport,
 )
+from powercontext.sources.pdf_pages import (
+    PDF_PAGE_SOURCE_DEFINITION,
+    PDFDocumentInput,
+    PDFPageInput,
+    parse_pdf_document,
+    search_pdf_pages,
+)
 from powercontext.sources.projections import TEXT_EVIDENCE_PROJECTION_KEY, TextEvidence
 from powercontext.sources.protocols import SourceCatalogBackend, SourceStore
 
 __all__ = [
+    "PDF_PAGE_SOURCE_DEFINITION",
     "TEXT_EVIDENCE_PROJECTION_KEY",
     "AdapterSourceDefinition",
     "Connector",
@@ -53,6 +61,8 @@ __all__ = [
     "ConnectorRunSession",
     "ConnectorRunStatus",
     "ConnectorSubmissionStatus",
+    "PDFDocumentInput",
+    "PDFPageInput",
     "Source",
     "SourceAdapter",
     "SourceCatalog",
@@ -70,5 +80,7 @@ __all__ = [
     "SourceStore",
     "TextEvidence",
     "manifest_for_definition",
+    "parse_pdf_document",
     "project_source_for_transport",
+    "search_pdf_pages",
 ]
