@@ -247,6 +247,12 @@ class CompositeMemoryIndex:
         request: MemorySearchRequest,
         /,
     ) -> MemorySearchChannels:
+        if request.mode == "hybrid":
+            # A native backend can return both authoritative channel rankings from
+            # one statement; do not also invoke the standalone channel indexes.
+            for index in self.indexes:
+                if getattr(index, "native_hybrid", False):
+                    return await index.search(connection, scope_id, request)
         fts: tuple[MemoryChannelHit, ...] = ()
         vector: tuple[MemoryChannelHit, ...] = ()
         for index in self.indexes:
