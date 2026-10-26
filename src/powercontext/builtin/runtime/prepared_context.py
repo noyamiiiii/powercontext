@@ -17,9 +17,12 @@
 from __future__ import annotations
 
 import json
+import math
+import re
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from itertools import chain
+from itertools import chain, pairwise
 from typing import TypeVar
 
 from powercontext.artifacts import ArtifactAddress, ArtifactRef
@@ -106,6 +109,7 @@ class PreparedContextBuild:
     origins: tuple[PreparedContextOrigin, ...]
     omissions: PreparedContextOmissions = PreparedContextOmissions()
     code_origins: tuple[CodeEvidenceRef, ...] = ()
+    fragments: tuple[PreparedEvidenceFragment, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -115,6 +119,35 @@ class MemoryEntryAddress:
     memory: ArtifactAddress
     entry_id: str
     entry_version_id: str
+
+
+@dataclass(frozen=True)
+class PreparedEvidenceFragment:
+    """One literal Memory fragment selected for a query."""
+
+    address: MemoryEntryAddress
+    start: int
+    end: int
+    text: str
+
+
+@dataclass(frozen=True)
+class _EvidenceDocument:
+    address: MemoryEntryAddress
+    text: str
+    hit_rank: int
+    spans: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True)
+class _EvidenceRange:
+    document_index: int
+    start: int
+    end: int
+    score: float
+    covered_terms: frozenset[str]
+    anchor_start: int
+    anchor_end: int
 
 
 PreparedContextOrigin = MemoryCitation | ArtifactRef | MemoryEntryAddress | ArtifactAddress
@@ -211,6 +244,13 @@ class PreparedContextBuilder:
         profile_candidates: Sequence[PreparedProfileCandidate] = (),
         code_candidates: Sequence[PreparedCodeCandidate] = (),
     ) -> PreparedContextBuild:
+        if request.evidence_selection:
+            return self._build_evidence_result(
+                request=request,
+                current_scope_id=current_scope_id,
+                memory_candidates=memory_candidates,
+            )
+
         if request.include_code:
 
             def historical(history_request: PrepareContextRequest, entries: int) -> PreparedContextBuild:
@@ -256,6 +296,32 @@ class PreparedContextBuilder:
             omissions=omissions,
         )
 
+    def _build_evidence_result(
+        self,
+        *,
+        request: PrepareContextRequest,
+        current_scope_id: str | None,
+        memory_candidates: Sequence[PreparedMemoryCandidates],
+    ) -> PreparedContextBuild:
+        if sum(len(candidates.hits) for candidates in memory_candidates) > self.memory_candidate_limit:
+            raise PreparedContextInvariantError("memory-candidate-limit")
+        content, origins, fragments, omissions = self._select_evidence(
+            request=request,
+            current_scope_id=current_scope_id,
+            memory_candidates=memory_candidates,
+        )
+        if content is None:
+            return PreparedContextBuild(context=self.empty(), origins=(), omissions=omissions)
+        content_bytes = len(content.encode("utf-8"))
+        if content_bytes > request.max_bytes:
+            raise PreparedContextInvariantError("evidence-selection-output-budget")
+        return PreparedContextBuild(
+            context=PreparedContext(status="ready", content=content, content_bytes=content_bytes),
+            origins=origins,
+            omissions=omissions,
+            fragments=fragments,
+        )
+
     def probe_budget(
         self,
         *,
@@ -274,17 +340,24 @@ class PreparedContextBuilder:
 
         Pure and side-effect free: no I/O, no persistence, nothing reported to any sink, and
         the same inputs as :meth:`build_scopes_result` are guaranteed to yield the same
-        counters because both go through :meth:`_select_entries`.
+        counters because both go through the same selection path as :meth:`build_scopes_result`.
         """
 
-        content, origins, omissions = self._select_entries(
-            request=request,
-            current_scope_id=current_scope_id,
-            memory_candidates=memory_candidates,
-            experience_candidates=experience_candidates,
-            profile_candidates=profile_candidates,
-            topic_memory_hits=topic_memory_hits,
-        )
+        if request.evidence_selection:
+            content, origins, _, omissions = self._select_evidence(
+                request=request,
+                current_scope_id=current_scope_id,
+                memory_candidates=memory_candidates,
+            )
+        else:
+            content, origins, omissions = self._select_entries(
+                request=request,
+                current_scope_id=current_scope_id,
+                memory_candidates=memory_candidates,
+                experience_candidates=experience_candidates,
+                profile_candidates=profile_candidates,
+                topic_memory_hits=topic_memory_hits,
+            )
         content_bytes = 0 if content is None else len(content.encode("utf-8"))
         return RecallBudgetView(
             max_bytes=request.max_bytes,
@@ -293,6 +366,63 @@ class PreparedContextBuilder:
             dropped_items=omissions.dropped_items,
             unused_bytes=max(0, request.max_bytes - content_bytes),
         )
+
+    def _select_evidence(
+        self,
+        *,
+        request: PrepareContextRequest,
+        current_scope_id: str | None,
+        memory_candidates: Sequence[PreparedMemoryCandidates],
+    ) -> tuple[
+        str | None,
+        tuple[PreparedContextOrigin, ...],
+        tuple[PreparedEvidenceFragment, ...],
+        PreparedContextOmissions,
+    ]:
+        documents = _evidence_documents(memory_candidates, current_scope_id=current_scope_id)
+        if not documents:
+            return None, (), (), PreparedContextOmissions()
+
+        candidates = _rank_evidence_candidates(request.query, documents)
+        if not candidates:
+            return None, (), (), PreparedContextOmissions()
+
+        selected: list[_EvidenceRange] = []
+        dropped = 0
+        truncated = 0
+        for candidate in candidates:
+            proposal = _with_evidence_candidate(selected, candidate)
+            fragments = _evidence_fragments(proposal, documents)
+            if not fragments or _rendered_evidence_bytes(fragments) > request.max_bytes:
+                fitted = _fit_evidence_candidate(
+                    selected=selected,
+                    candidate=candidate,
+                    documents=documents,
+                    query_terms=candidate.covered_terms,
+                    max_bytes=request.max_bytes,
+                )
+                if fitted is None:
+                    dropped += 1
+                    continue
+                proposal = fitted[0]
+                fragments = _evidence_fragments(proposal, documents)
+                truncated += int(fitted[1])
+            selected = proposal
+            if len(selected) >= self.entry_limit:
+                break
+
+        if not selected:
+            return None, (), (), PreparedContextOmissions(dropped_items=dropped)
+
+        fragments = _evidence_fragments(selected, documents)
+        content = _render_evidence_fragments(fragments)
+        origins = tuple(fragment.address for fragment in fragments)
+        omissions = PreparedContextOmissions(
+            truncated_items=truncated,
+            dropped_items=dropped,
+            dropped_no_fitting_truncation=dropped,
+        )
+        return content, origins, fragments, omissions
 
     def _select_entries(
         self,
@@ -658,6 +788,379 @@ class PreparedContextBuilder:
         if best is None:
             return _EntryFit(dropped_no_fitting_truncation=True)
         return _EntryFit(entry=best)
+
+
+_TOKEN_PATTERN = re.compile(r"[^\W_]+")
+_BOUNDARY_PATTERN = re.compile(r"[.!?]+(?:[\"')\]]+)?(?=\s|$)|\n+")
+_STOP_TERMS = frozenset({
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "been",
+    "being",
+    "but",
+    "by",
+    "can",
+    "could",
+    "did",
+    "do",
+    "does",
+    "for",
+    "from",
+    "had",
+    "has",
+    "have",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "may",
+    "might",
+    "of",
+    "on",
+    "or",
+    "should",
+    "than",
+    "that",
+    "the",
+    "their",
+    "these",
+    "this",
+    "those",
+    "to",
+    "was",
+    "were",
+    "will",
+    "with",
+    "would",
+})
+
+
+def _evidence_documents(
+    memory_candidates: Sequence[PreparedMemoryCandidates],
+    *,
+    current_scope_id: str | None,
+) -> tuple[_EvidenceDocument, ...]:
+    documents: list[_EvidenceDocument] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for candidates in memory_candidates:
+        if candidates.hits and candidates.memory_ref is None:
+            raise PreparedContextInvariantError("memory-ref-missing")
+        scope_id = candidates.scope_id or current_scope_id
+        if candidates.hits and not scope_id:
+            raise PreparedContextInvariantError("evidence-scope-missing")
+        for rank, hit in enumerate(candidates.hits):
+            if hit.memory_ref != candidates.memory_ref:
+                raise PreparedContextInvariantError("memory-ref-mismatch")
+            if not hit.entry_id.strip() or not hit.entry_version_id.strip() or not hit.text.strip():
+                continue
+            identity = (scope_id or "", hit.memory_ref.artifact_id, hit.entry_id, hit.entry_version_id)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            address = MemoryEntryAddress(
+                memory=ArtifactAddress(scope_id=scope_id or "", artifact=hit.memory_ref),
+                entry_id=hit.entry_id,
+                entry_version_id=hit.entry_version_id,
+            )
+            documents.append(
+                _EvidenceDocument(
+                    address=address,
+                    text=hit.text,
+                    hit_rank=rank,
+                    spans=_sentence_spans(hit.text),
+                )
+            )
+    return tuple(documents)
+
+
+def _sentence_spans(text: str) -> tuple[tuple[int, int], ...]:
+    spans: list[tuple[int, int]] = []
+    start = 0
+    while start < len(text) and text[start].isspace():
+        start += 1
+    for boundary in _BOUNDARY_PATTERN.finditer(text, start):
+        end = boundary.end()
+        if boundary.group().isspace():
+            end = boundary.start()
+        if start < end:
+            spans.append((start, end))
+        start = boundary.end()
+        while start < len(text) and text[start].isspace():
+            start += 1
+    if start < len(text):
+        spans.append((start, len(text)))
+    return tuple(span for span in spans if text[span[0] : span[1]].strip())
+
+
+def _rank_evidence_candidates(query: str, documents: Sequence[_EvidenceDocument]) -> tuple[_EvidenceRange, ...]:
+    query_sequence = _content_terms(query)
+    if not query_sequence:
+        query_sequence = _all_terms(query)
+    query_terms = frozenset(query_sequence)
+    if not query_terms:
+        return ()
+
+    sentence_terms = tuple(
+        _content_terms(document.text[start:end]) for document in documents for start, end in document.spans
+    )
+    document_frequency = {term: sum(term in terms for terms in sentence_terms) for term in query_terms}
+    sentence_count = max(1, len(sentence_terms))
+    term_weights = {
+        term: 1.0 + math.log((sentence_count + 1.0) / (document_frequency.get(term, 0) + 1.0)) for term in query_terms
+    }
+    total_weight = sum(term_weights.values())
+    average_length = max(1.0, sum(len(terms) for terms in sentence_terms) / sentence_count)
+
+    candidates: dict[tuple[int, int, int], _EvidenceRange] = {}
+    for document_index, document in enumerate(documents):
+        document_terms = _all_terms(document.text)
+        document_score = _evidence_overlap(
+            query_sequence,
+            query_terms,
+            term_weights,
+            document_terms,
+            average_length=average_length,
+            total_weight=total_weight,
+        )[0]
+        atomic_terms = tuple(_all_terms(document.text[start:end]) for start, end in document.spans)
+        for span_index in range(len(document.spans)):
+            for width in range(1, min(4, len(document.spans) - span_index + 1)):
+                start = document.spans[span_index][0]
+                end = document.spans[span_index + width - 1][1]
+                if start >= end:
+                    continue
+                window_terms = tuple(chain.from_iterable(atomic_terms[span_index : span_index + width]))
+                coverage, tf_score = _evidence_overlap(
+                    query_sequence,
+                    query_terms,
+                    term_weights,
+                    window_terms,
+                    average_length=average_length,
+                    total_weight=total_weight,
+                )
+                matched = query_terms.intersection(window_terms)
+                unique_coverage = len(matched) / len(query_terms)
+                phrase_score = _query_phrase_score(query_sequence, window_terms)
+                rank_prior = 0.15 / (document.hit_rank + 1)
+                score = (
+                    7.0 * coverage
+                    + 2.0 * unique_coverage
+                    + 2.0 * tf_score
+                    + 2.0 * document_score
+                    + 1.5 * phrase_score
+                    + rank_prior
+                )
+                candidate = _EvidenceRange(
+                    document_index=document_index,
+                    start=start,
+                    end=end,
+                    score=score,
+                    covered_terms=frozenset(matched),
+                    anchor_start=document.spans[span_index][0],
+                    anchor_end=document.spans[span_index][1],
+                )
+                identity = (document_index, start, end)
+                existing = candidates.get(identity)
+                if existing is None or candidate.score > existing.score:
+                    candidates[identity] = candidate
+    return tuple(
+        sorted(
+            candidates.values(),
+            key=lambda candidate: (-candidate.score, candidate.end - candidate.start, candidate.document_index),
+        )
+    )
+
+
+def _evidence_overlap(
+    query_sequence: tuple[str, ...],
+    query_terms: frozenset[str],
+    term_weights: dict[str, float],
+    terms: Sequence[str],
+    *,
+    average_length: float,
+    total_weight: float,
+) -> tuple[float, float]:
+    counts = Counter(terms)
+    matched_weight = sum(weight for term, weight in term_weights.items() if counts[term])
+    coverage = matched_weight / total_weight
+    length_normalization = 1.2 * (0.25 + 0.75 * len(terms) / average_length)
+    saturated = sum(
+        weight * counts[term] * 2.2 / (counts[term] + 1.2 * length_normalization)
+        for term, weight in term_weights.items()
+        if counts[term]
+    )
+    tf_score = min(1.0, saturated / total_weight)
+    phrase_score = _query_phrase_score(query_sequence, terms)
+    return coverage + 0.2 * phrase_score, tf_score
+
+
+def _query_phrase_score(query_sequence: Sequence[str], terms: Sequence[str]) -> float:
+    if len(query_sequence) < 2:
+        return 0.0
+    term_pairs = set(pairwise(terms))
+    query_pairs = tuple(pairwise(query_sequence))
+    return sum(pair in term_pairs for pair in query_pairs) / len(query_pairs)
+
+
+def _all_terms(value: str) -> tuple[str, ...]:
+    return tuple(_normalize_term(term) for term in _TOKEN_PATTERN.findall(value))
+
+
+def _content_terms(value: str) -> tuple[str, ...]:
+    return tuple(term for term in _all_terms(value) if term not in _STOP_TERMS)
+
+
+def _normalize_term(term: str) -> str:
+    value = term.casefold()
+    if value.isdigit() or len(value) <= 3:
+        return value
+    for suffix, replacement in (
+        ("ational", "ate"),
+        ("ations", "ate"),
+        ("ation", "ate"),
+        ("ating", "ate"),
+        ("ated", "ate"),
+        ("ates", "ate"),
+        ("ingly", ""),
+        ("edly", ""),
+        ("ness", ""),
+        ("ies", "y"),
+        ("ing", ""),
+        ("ed", ""),
+        ("ly", ""),
+    ):
+        if value.endswith(suffix) and len(value) - len(suffix) >= 3:
+            value = value[: -len(suffix)] + replacement
+            break
+    if value.endswith("s") and not value.endswith(("ss", "is", "us")) and len(value) > 4:
+        value = value[:-1]
+    return value
+
+
+def _with_evidence_candidate(
+    selected: Sequence[_EvidenceRange],
+    candidate: _EvidenceRange,
+) -> list[_EvidenceRange]:
+    ranges = sorted((*selected, candidate), key=lambda item: (item.document_index, item.start, item.end))
+    merged: list[_EvidenceRange] = []
+    for item in ranges:
+        if not merged or merged[-1].document_index != item.document_index or item.start > merged[-1].end + 1:
+            merged.append(item)
+            continue
+        previous = merged[-1]
+        merged[-1] = _EvidenceRange(
+            document_index=previous.document_index,
+            start=previous.start,
+            end=max(previous.end, item.end),
+            score=max(previous.score, item.score),
+            covered_terms=previous.covered_terms | item.covered_terms,
+            anchor_start=item.anchor_start,
+            anchor_end=item.anchor_end,
+        )
+    return merged
+
+
+def _fit_evidence_candidate(
+    *,
+    selected: Sequence[_EvidenceRange],
+    candidate: _EvidenceRange,
+    documents: Sequence[_EvidenceDocument],
+    query_terms: frozenset[str],
+    max_bytes: int,
+) -> tuple[list[_EvidenceRange], bool] | None:
+    document = documents[candidate.document_index]
+    starts = (
+        candidate.anchor_start,
+        _first_matching_term_start(document.text, candidate.anchor_start, candidate.anchor_end, query_terms),
+        (candidate.anchor_start + candidate.anchor_end) // 2,
+    )
+    for start in dict.fromkeys(starts):
+        if start is None or not candidate.anchor_start <= start < candidate.anchor_end:
+            continue
+        lower = start + 1
+        upper = candidate.anchor_end
+        best: list[_EvidenceRange] | None = None
+        while lower <= upper:
+            midpoint = (lower + upper) // 2
+            fitted = replace(
+                candidate,
+                start=start,
+                end=midpoint,
+                anchor_start=start,
+                anchor_end=midpoint,
+            )
+            proposal = _with_evidence_candidate(selected, fitted)
+            fragments = _evidence_fragments(proposal, documents)
+            if fragments and _rendered_evidence_bytes(fragments) <= max_bytes:
+                best = proposal
+                lower = midpoint + 1
+            else:
+                upper = midpoint - 1
+        if best is not None:
+            return best, True
+    return None
+
+
+def _first_matching_term_start(
+    text: str,
+    start: int,
+    end: int,
+    query_terms: frozenset[str],
+) -> int | None:
+    for match in _TOKEN_PATTERN.finditer(text, start, end):
+        if _normalize_term(match.group()) in query_terms:
+            return max(start, match.start() - 48)
+    return None
+
+
+def _evidence_fragments(
+    selected: Sequence[_EvidenceRange],
+    documents: Sequence[_EvidenceDocument],
+) -> tuple[PreparedEvidenceFragment, ...]:
+    fragments: list[PreparedEvidenceFragment] = []
+    for document_index, document in enumerate(documents):
+        for item in (range_ for range_ in selected if range_.document_index == document_index):
+            fragments.append(
+                PreparedEvidenceFragment(
+                    address=document.address,
+                    start=item.start,
+                    end=item.end,
+                    text=document.text[item.start : item.end],
+                )
+            )
+    return tuple(fragments)
+
+
+def _rendered_evidence_bytes(fragments: Sequence[PreparedEvidenceFragment]) -> int:
+    return len(_render_evidence_fragments(fragments).encode("utf-8"))
+
+
+def _render_evidence_fragments(fragments: Sequence[PreparedEvidenceFragment]) -> str:
+    envelope = {
+        "trust": "untrusted_history",
+        "items": [
+            {
+                "citation": {
+                    "scope_id": fragment.address.memory.scope_id,
+                    "memory_ref": fragment.address.memory.artifact.model_dump(mode="json"),
+                    "entry_id": fragment.address.entry_id,
+                    "entry_version_id": fragment.address.entry_version_id,
+                },
+                "content": fragment.text,
+                "start": fragment.start,
+                "end": fragment.end,
+            }
+            for fragment in fragments
+        ],
+    }
+    encoded = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return "\n\n".join((TRUST_POLICY, f"{_BEGIN_MARKER}\n{encoded}\n{_END_MARKER}"))
 
 
 def _interleave(
