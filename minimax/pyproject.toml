@@ -1,0 +1,10 @@
+[project]
+name = "minimax-sdd-context"
+version = "0.1.0"
+description = "Reproducible SDD engineering context with seekdb, PowerContext and MiniMax"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pyseekdb==1.4.0.post1", "powercontext[server]==1.4.0", "pytest==8.4.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "sample_project/tests"]
+markers = ["target: new order status behavior", "regression: original order behavior", "integration: real seekdb and PowerContext"]

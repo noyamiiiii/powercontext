@@ -1,0 +1,9 @@
+{
+  "task_id": "orders-status-filter",
+  "query": "Implement orders list_orders status filter; preserve sorting pagination input validation and non-mutation.",
+  "target": "sample_project/orders.py",
+  "required_sources": ["sample_project/spec.md", "sample_project/orders.py", "sample_project/tests/test_orders.py", "sample_project/seed.json"],
+  "required_spec_ids": ["ORD-001", "ORD-002", "ORD-003", "ORD-004"],
+  "target_tests": "sample_project/tests/test_orders.py -m target",
+  "regression_tests": "sample_project/tests/test_orders.py -m regression"
+}

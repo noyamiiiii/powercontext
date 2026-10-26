@@ -1,0 +1,33 @@
+{
+  "time": "2026-10-26T10:17:15.334663+00:00",
+  "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+  "versions": {
+    "powercontext": "1.4.0",
+    "pyseekdb": "1.4.0.post1",
+    "pylibseekdb": "1.4.0.post1",
+    "pytest": "8.4.2"
+  },
+  "minimax": {
+    "record": "minimax-provenance.json",
+    "verified_against_delivered_source": true
+  },
+  "seekdb": {
+    "mode": "embedded",
+    "operations": [
+      "upsert",
+      "refresh_index",
+      "query",
+      "get",
+      "delete"
+    ]
+  },
+  "powercontext": {
+    "mode": "builtin runtime with persistent SQLite",
+    "operations": [
+      "scopes.create",
+      "sources.capture",
+      "records.list_sources"
+    ],
+    "process_restart_verified": true
+  }
+}

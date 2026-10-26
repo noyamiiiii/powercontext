@@ -1,0 +1,4 @@
+* text eol=lf
+# Preserve whitespace emitted by pytest and unified-diff context lines.
+evidence/*.log whitespace=-blank-at-eol
+evidence/*.diff whitespace=-blank-at-eol

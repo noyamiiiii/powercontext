@@ -1,0 +1,19 @@
+{
+  "sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+  "files": {
+    "sample_project/__init__.py": "e900bf53051b86c214d1d0ffe3be0b267efaeecc06488c48669e20d1b20c81ad",
+    "sample_project/orders.py": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+    "sample_project/tests/test_orders.py": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b",
+    "scripts/develop.py": "45a2e95c053fc1bdf7f8e857fb9d2a3506352bbf643960f8224c4c78941e233a",
+    "scripts/verify.py": "c8a93d916afd4d8ff80daf3cae41c347e121debd5486915e89f1541011501ff1",
+    "sdd/__init__.py": "1d46e3603de7097fe2b32d2a494cf9cb2470db3e84c103e93920367d9110692a",
+    "sdd/agent.py": "c89194949fb935b485720404054991a9955a082535fbf8376932f5302b12ec09",
+    "sdd/cli.py": "823f6ab9ce8ee641f43df9d1d7c689f4c16678e2d3324d08db364c1f785849a6",
+    "sdd/common.py": "1eeeeff1a232d82fed1eaa7a9a32afb10e6764c341a956461708b43787d0d6ab",
+    "sdd/index.py": "92d6d41f93f930a52a039651f05eb8f7ee9539b0ff00b1b187396b489300c934",
+    "sdd/state.py": "c27e942ede715884a3fe904c55a4eebf58aea5349590850c11216089d05db75f",
+    "snapshots/after.py": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+    "snapshots/before.py": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+    "tests/test_context.py": "b0011d4a7e8a10fd499a59efc858607bbf72ef0696890278e6d053579c6c08f0"
+  }
+}

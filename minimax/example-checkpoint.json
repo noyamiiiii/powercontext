@@ -1,0 +1,5 @@
+{
+  "done": ["已导入规格、代码和测试，已定位订单筛选修改位置"],
+  "todo": ["调用 MiniMax 修改 list_orders", "运行目标与回归测试"],
+  "validations": []
+}

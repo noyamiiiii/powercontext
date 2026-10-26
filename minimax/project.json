@@ -1,0 +1,9 @@
+{
+  "project": "orders-demo",
+  "files": [
+    {"path": "sample_project/spec.md", "kind": "spec", "module": "orders"},
+    {"path": "sample_project/orders.py", "kind": "code", "module": "orders"},
+    {"path": "sample_project/tests/test_orders.py", "kind": "test", "module": "orders"},
+    {"path": "sample_project/seed.json", "kind": "data", "module": "orders"}
+  ]
+}

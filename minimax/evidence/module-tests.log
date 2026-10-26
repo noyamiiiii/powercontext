@@ -1,0 +1,18 @@
+{
+  "name": "module-tests",
+  "time": "2026-10-26T10:16:38.091164+00:00",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "tests",
+    "-q"
+  ],
+  "exit_code": 0,
+  "expected_exit_code": 0,
+  "code_sha256": "828815c1155750ab29920f23bd6daa6f1c94cc116467542f5105b9112c6a64ca",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+.....                                                                    [100%]
+5 passed in 17.87s

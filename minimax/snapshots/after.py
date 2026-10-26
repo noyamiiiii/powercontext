@@ -1,0 +1,18 @@
+"""Order listing service with optional exact status filtering."""
+
+
+def list_orders(orders, *, status=None, offset=0, limit=20):
+    """Return orders sorted by id, with stable offset/limit pagination."""
+    if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+        raise ValueError("offset must be a non-negative integer")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+        raise ValueError("limit must be an integer between 1 and 100")
+    if status is not None and (
+        not isinstance(status, str) or status not in {"pending", "paid", "cancelled"}
+    ):
+        raise ValueError("status must be one of: pending, paid, cancelled")
+
+    selected = sorted(orders, key=lambda order: order["id"])
+    if status is not None:
+        selected = [order for order in selected if order.get("status") == status]
+    return selected[offset:offset + limit]

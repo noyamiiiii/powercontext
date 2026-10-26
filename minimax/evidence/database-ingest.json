@@ -1,0 +1,13 @@
+{
+  "time": "2026-10-26T10:16:49.544009+00:00",
+  "backend": "seekdb",
+  "operation": "upsert",
+  "records": 22,
+  "deleted": [],
+  "file_hashes": {
+    "sample_project/spec.md": "6d52b316e542b18b21eb399259d74abb2efb664d77d373c058f6e83f6e11acc3",
+    "sample_project/orders.py": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+    "sample_project/tests/test_orders.py": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b",
+    "sample_project/seed.json": "5a64a2e260fa6d39a0f7fc1e6fea82539d4d350472e28b21c01cfb2e619e886c"
+  }
+}

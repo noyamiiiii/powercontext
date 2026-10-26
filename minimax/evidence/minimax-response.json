@@ -1,0 +1,18 @@
+{
+  "time": "2026-10-26T10:15:33.077466+00:00",
+  "id": "072e5b3e978d0941c36450156916e361",
+  "request_id": null,
+  "model": "MiniMax-M3.1-Flash",
+  "requested_model": "MiniMax-M3.1-Flash",
+  "usage": {
+    "input_tokens": 3165,
+    "output_tokens": 1024,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens_details": {
+      "thinking_tokens": 747
+    }
+  },
+  "finish_reason": "end_turn",
+  "delivered_content": "{\"path\":\"sample_project/orders.py\",\"content\":\"\\\"\\\"\\\"Order listing service with optional exact status filtering.\\\"\\\"\\\"\\n\\n\\ndef list_orders(orders, *, status=None, offset=0, limit=20):\\n    \\\"\\\"\\\"Return orders sorted by id, with stable offset/limit pagination.\\\"\\\"\\\"\\n    if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:\\n        raise ValueError(\\\"offset must be a non-negative integer\\\")\\n    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:\\n        raise ValueError(\\\"limit must be an integer between 1 and 100\\\")\\n    if status is not None and (\\n        not isinstance(status, str) or status not in {\\\"pending\\\", \\\"paid\\\", \\\"cancelled\\\"}\\n    ):\\n        raise ValueError(\\\"status must be one of: pending, paid, cancelled\\\")\\n\\n    selected = sorted(orders, key=lambda order: order[\\\"id\\\"])\\n    if status is not None:\\n        selected = [order for order in selected if order.get(\\\"status\\\") == status]\\n    return selected[offset:offset + limit]\\n\"}"
+}

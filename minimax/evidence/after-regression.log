@@ -1,0 +1,20 @@
+{
+  "name": "after-regression",
+  "time": "2026-10-26T10:16:19.887030+00:00",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "sample_project/tests/test_orders.py",
+    "-m",
+    "regression",
+    "-q"
+  ],
+  "exit_code": 0,
+  "expected_exit_code": 0,
+  "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+.............                                                            [100%]
+13 passed, 14 deselected in 0.02s

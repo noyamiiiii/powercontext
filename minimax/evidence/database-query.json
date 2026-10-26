@@ -1,0 +1,54 @@
+{
+  "time": "2026-10-26T10:17:02.949177+00:00",
+  "query": "Implement orders list_orders status filter; preserve sorting pagination input validation and non-mutation.",
+  "query_vector_sha256": "5501ae3206bd9150b2564b4b31263ff4eea01bbf0ad546a1ee7c121c2ea2b68b",
+  "where": {
+    "project": "orders-demo"
+  },
+  "expansion_filter": {
+    "$and": [
+      {
+        "project": "orders-demo"
+      },
+      {
+        "module": {
+          "$in": [
+            "orders"
+          ]
+        }
+      },
+      {
+        "symbol": "<file>"
+      }
+    ]
+  },
+  "result": {
+    "backend": "seekdb",
+    "collection": "engineering_sources",
+    "modules": [
+      "orders"
+    ],
+    "query_ids": [
+      "e0efab10d17e3ef971f8653cc83b5728eeab4a1d87103ff4927f60f1e954f23e",
+      "0f4f9690cce5c617ce2aa215b1151cf889df0da2056f5521843b8a7e08660172",
+      "1b28f3d86747afbb78284cbc02c0ace89a4e40eb8e82d2daeb3c7e19c4beb1d9",
+      "57485913a6719bf7c0da2c3a6b72e04f2334a42370bf2acf656a2236cd57a8f2",
+      "9bbfe2adf9fbd488d9f34860a1f793173987666ffed2f54af2ede5a4f0c183df",
+      "374de1ad9e054f8d0b33c13aa7e6dad2c747f778ec5db34bc8f47e9109fd43cf"
+    ],
+    "distances": [
+      0.33257617548562024,
+      0.36171525716781616,
+      0.36676220198757026,
+      0.41110478076651014,
+      0.4216482294588215,
+      0.4322250485420227
+    ],
+    "expanded_ids": [
+      "4db16f699bce7c40a639b600e934e929c029d347b867dbea2fceaf1f73649c8a",
+      "c733b8a9c3aae45cd02802b3dcb58f9d555984142c8407e1cac6bb22118799f3",
+      "57485913a6719bf7c0da2c3a6b72e04f2334a42370bf2acf656a2236cd57a8f2",
+      "03984696efa46df6426a833327dec24a3a543ea942d2f39d08171a268315bf35"
+    ]
+  }
+}

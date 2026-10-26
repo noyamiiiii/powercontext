@@ -1,0 +1,109 @@
+{
+  "name": "before-target",
+  "time": "2026-10-26T10:16:19.129961+00:00",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "sample_project/tests/test_orders.py",
+    "-m",
+    "target",
+    "-q",
+    "--tb=short"
+  ],
+  "exit_code": 1,
+  "expected_exit_code": 1,
+  "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+FFFFFFFFFFFFF.                                                           [100%]
+=================================== FAILURES ===================================
+______________________ test_exact_status[paid-expected0] _______________________
+sample_project/tests/test_orders.py:15: in test_exact_status
+    assert [o["id"] for o in list_orders(orders, status=status)] == expected
+E   assert [1, 2, 3, 4, 5, 6] == [2, 3, 5]
+E     
+E     At index 0 diff: 1 != 2
+E     Left contains 3 more items, first extra item: 4
+E     Use -v to get more diff
+_____________________ test_exact_status[pending-expected1] _____________________
+sample_project/tests/test_orders.py:15: in test_exact_status
+    assert [o["id"] for o in list_orders(orders, status=status)] == expected
+E   assert [1, 2, 3, 4, 5, 6] == [1]
+E     
+E     Left contains 5 more items, first extra item: 2
+E     Use -v to get more diff
+____________________ test_exact_status[cancelled-expected2] ____________________
+sample_project/tests/test_orders.py:15: in test_exact_status
+    assert [o["id"] for o in list_orders(orders, status=status)] == expected
+E   assert [1, 2, 3, 4, 5, 6] == [4]
+E     
+E     At index 0 diff: 1 != 4
+E     Left contains 5 more items, first extra item: 2
+E     Use -v to get more diff
+________________________ test_filter_before_pagination _________________________
+sample_project/tests/test_orders.py:19: in test_filter_before_pagination
+    assert [o["id"] for o in list_orders(orders, status="paid", offset=1, limit=1)] == [3]
+E   assert [2] == [3]
+E     
+E     At index 0 diff: 2 != 3
+E     Use -v to get more diff
+____________________________ test_unmatched_filter _____________________________
+sample_project/tests/test_orders.py:23: in test_unmatched_filter
+    assert list_orders([{"id": 1, "status": "pending"}], status="paid") == []
+E   AssertionError: assert [{'id': 1, 's...': 'pending'}] == []
+E     
+E     Left contains one more item: {'id': 1, 'status': 'pending'}
+E     Use -v to get more diff
+____________________________ test_invalid_status[] _____________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+__________________________ test_invalid_status[PAID] ___________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_________________________ test_invalid_status[unknown] _________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+__________________________ test_invalid_status[True] ___________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+____________________________ test_invalid_status[7] ____________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_________________________ test_invalid_status[status5] _________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_________________________ test_invalid_status[status6] _________________________
+sample_project/tests/test_orders.py:28: in test_invalid_status
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+______________________ test_missing_status_is_not_a_match ______________________
+sample_project/tests/test_orders.py:33: in test_missing_status_is_not_a_match
+    assert list_orders([{"id": 1}, {"id": 2, "status": "paid"}], status="paid") == [{"id": 2, "status": "paid"}]
+E   AssertionError: assert [{'id': 1}, {...tus': 'paid'}] == [{'id': 2, 'status': 'paid'}]
+E     
+E     At index 0 diff: {'id': 1} != {'id': 2, 'status': 'paid'}
+E     Left contains one more item: {'id': 2, 'status': 'paid'}
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED sample_project/tests/test_orders.py::test_exact_status[paid-expected0]
+FAILED sample_project/tests/test_orders.py::test_exact_status[pending-expected1]
+FAILED sample_project/tests/test_orders.py::test_exact_status[cancelled-expected2]
+FAILED sample_project/tests/test_orders.py::test_filter_before_pagination - a...
+FAILED sample_project/tests/test_orders.py::test_unmatched_filter - Assertion...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[] - Failed: D...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[PAID] - Faile...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[unknown] - Fa...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[True] - Faile...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[7] - Failed: ...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[status5] - Fa...
+FAILED sample_project/tests/test_orders.py::test_invalid_status[status6] - Fa...
+FAILED sample_project/tests/test_orders.py::test_missing_status_is_not_a_match
+13 failed, 1 passed, 13 deselected in 0.04s

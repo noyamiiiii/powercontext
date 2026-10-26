@@ -1,0 +1,234 @@
+{
+  "time": "2026-10-26T10:17:15.332431+00:00",
+  "results": [
+    {
+      "name": "before-target",
+      "time": "2026-10-26T10:16:19.129961+00:00",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "sample_project/tests/test_orders.py",
+        "-m",
+        "target",
+        "-q",
+        "--tb=short"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "before-regression",
+      "time": "2026-10-26T10:16:19.403182+00:00",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "sample_project/tests/test_orders.py",
+        "-m",
+        "regression",
+        "-q"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "after-target",
+      "time": "2026-10-26T10:16:19.636305+00:00",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "sample_project/tests/test_orders.py",
+        "-m",
+        "target",
+        "-q"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "after-regression",
+      "time": "2026-10-26T10:16:19.887030+00:00",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "sample_project/tests/test_orders.py",
+        "-m",
+        "regression",
+        "-q"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "module-tests",
+      "time": "2026-10-26T10:16:38.091164+00:00",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tests",
+        "-q"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "828815c1155750ab29920f23bd6daa6f1c94cc116467542f5105b9112c6a64ca",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "state-empty",
+      "time": "2026-10-26T10:16:40.238894+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "resume",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+        "--out",
+        "/tmp/minimax-sdd-verify-g_v_60th/empty.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "database-ingest",
+      "time": "2026-10-26T10:16:49.754678+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "ingest",
+        "--root",
+        "/tmp/minimax-sdd-verify-g_v_60th",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "context-before",
+      "time": "2026-10-26T10:16:55.679913+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "context",
+        "--root",
+        "/tmp/minimax-sdd-verify-g_v_60th",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+        "--out",
+        "/tmp/minimax-sdd-verify-g_v_60th/context.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "powercontext-write",
+      "time": "2026-10-26T10:16:57.538712+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "save",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+        "--state",
+        "/tmp/minimax-sdd-verify-g_v_60th/checkpoint.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "context-resumed",
+      "time": "2026-10-26T10:17:03.356058+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "context",
+        "--root",
+        "/tmp/minimax-sdd-verify-g_v_60th",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+        "--out",
+        "/tmp/minimax-sdd-verify-g_v_60th/context-resumed.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "spec-reimport",
+      "time": "2026-10-26T10:17:09.289358+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "ingest",
+        "--root",
+        "/tmp/minimax-sdd-verify-g_v_60th",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    },
+    {
+      "name": "spec-updated-context",
+      "time": "2026-10-26T10:17:15.309106+00:00",
+      "command": [
+        "python",
+        "-m",
+        "sdd.cli",
+        "context",
+        "--root",
+        "/tmp/minimax-sdd-verify-g_v_60th",
+        "--runtime",
+        "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+        "--out",
+        "/tmp/minimax-sdd-verify-g_v_60th/context-updated.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+      "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+    }
+  ],
+  "same_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b",
+  "before_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+  "after_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+  "source_version_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+  "acceptance": {
+    "runnable": true,
+    "minimax_participated": true,
+    "context_correct": true,
+    "database_used": true,
+    "state_reused_after_process_restart": true,
+    "code_change_effective": true
+  },
+  "complete": true
+}

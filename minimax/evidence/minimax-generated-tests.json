@@ -1,0 +1,7 @@
+{
+  "command": "python -m pytest sample_project/tests -q",
+  "exit_code": 0,
+  "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+  "stdout": "...........................                                              [100%]\n27 passed in 0.02s\n",
+  "stderr": ""
+}

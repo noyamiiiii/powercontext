@@ -1,0 +1,20 @@
+{
+  "name": "before-regression",
+  "time": "2026-10-26T10:16:19.403182+00:00",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "sample_project/tests/test_orders.py",
+    "-m",
+    "regression",
+    "-q"
+  ],
+  "exit_code": 0,
+  "expected_exit_code": 0,
+  "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+.............                                                            [100%]
+13 passed, 14 deselected in 0.01s

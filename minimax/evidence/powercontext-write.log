@@ -1,0 +1,112 @@
+{
+  "name": "powercontext-write",
+  "time": "2026-10-26T10:16:57.538712+00:00",
+  "command": [
+    "python",
+    "-m",
+    "sdd.cli",
+    "save",
+    "--runtime",
+    "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+    "--state",
+    "/tmp/minimax-sdd-verify-g_v_60th/checkpoint.json"
+  ],
+  "exit_code": 0,
+  "expected_exit_code": 0,
+  "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+{
+  "scope_id": "scp_5myk2nsqrgyjrhsztr0p19g63s",
+  "receipt": {
+    "source_ref": {
+      "source_type": "content",
+      "source_id": "8b8193fc-d03c-4866-beb9-430c38111230"
+    },
+    "sequence": 1
+  },
+  "state": {
+    "task_id": "orders-status-filter",
+    "time": "2026-10-26T10:16:57.286041+00:00",
+    "done": [
+      "ingested specifications, code and tests",
+      "implemented status filter",
+      "target and regression tests passed"
+    ],
+    "todo": [
+      "review MiniMax provenance and submit"
+    ],
+    "validations": [
+      {
+        "name": "before-target",
+        "time": "2026-10-26T10:16:19.129961+00:00",
+        "command": [
+          "python",
+          "-m",
+          "pytest",
+          "sample_project/tests/test_orders.py",
+          "-m",
+          "target",
+          "-q",
+          "--tb=short"
+        ],
+        "exit_code": 1,
+        "expected_exit_code": 1,
+        "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+        "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+      },
+      {
+        "name": "before-regression",
+        "time": "2026-10-26T10:16:19.403182+00:00",
+        "command": [
+          "python",
+          "-m",
+          "pytest",
+          "sample_project/tests/test_orders.py",
+          "-m",
+          "regression",
+          "-q"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "code_sha256": "4bce1251941a92fe8cfdb225a7b3f6c7afd83dffa4ed2923852c8738c0b571bc",
+        "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+      },
+      {
+        "name": "after-target",
+        "time": "2026-10-26T10:16:19.636305+00:00",
+        "command": [
+          "python",
+          "-m",
+          "pytest",
+          "sample_project/tests/test_orders.py",
+          "-m",
+          "target",
+          "-q"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+        "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+      },
+      {
+        "name": "after-regression",
+        "time": "2026-10-26T10:16:19.887030+00:00",
+        "command": [
+          "python",
+          "-m",
+          "pytest",
+          "sample_project/tests/test_orders.py",
+          "-m",
+          "regression",
+          "-q"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "code_sha256": "289cd060751b859c8ba54e86dce19c60be714e6f1623ca43586c795cef6651b9",
+        "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+      }
+    ]
+  }
+}

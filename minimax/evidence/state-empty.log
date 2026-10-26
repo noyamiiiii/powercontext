@@ -1,0 +1,25 @@
+{
+  "name": "state-empty",
+  "time": "2026-10-26T10:16:40.238894+00:00",
+  "command": [
+    "python",
+    "-m",
+    "sdd.cli",
+    "resume",
+    "--runtime",
+    "/tmp/minimax-sdd-verify-g_v_60th/runtime",
+    "--out",
+    "/tmp/minimax-sdd-verify-g_v_60th/empty.json"
+  ],
+  "exit_code": 0,
+  "expected_exit_code": 0,
+  "code_sha256": "61d8356af40176a0a2f6f83e35888348d5386a0e4771e61f9bdb81bd0e2c86e1",
+  "test_suite_sha256": "5680adc12f6f4f3ca1fd89edadfeb2abcf37461cad7f1d7879f4ba5712f6c72b"
+}
+
+{
+  "scope_id": "scp_5myk2nsqrgyjrhsztr0p19g63s",
+  "state": null,
+  "source_id": null,
+  "backend": "PowerContext builtin SQLite"
+}
