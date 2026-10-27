@@ -1,0 +1,35 @@
+{
+  "source": "Synthetic local verification executed against the embedded PowerContext bridge.",
+  "health": {
+    "status": "ok",
+    "memory": "PowerContext SQLite"
+  },
+  "initial_recall": {
+    "turn_count": 0,
+    "memory_kinds": [
+      "character",
+      "game-rule",
+      "world-setting",
+      "start"
+    ]
+  },
+  "remember": {
+    "status": "saved",
+    "turn": 1,
+    "memory_revision": 2
+  },
+  "cross_session_recall": {
+    "query": "茶壶市长为什么还在追着我",
+    "turn_count": 1,
+    "recalled": true,
+    "evidence_includes_previous_choice": true
+  },
+  "stored_memory_kinds": [
+    "world-setting",
+    "character",
+    "game-rule",
+    "start",
+    "player-choice",
+    "story-scene"
+  ]
+}

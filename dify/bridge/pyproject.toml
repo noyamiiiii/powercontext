@@ -1,0 +1,40 @@
+[project]
+name = "dify-story-memory-bridge"
+version = "0.1.0"
+description = "PowerContext memory bridge for the Outlandish Travel Agency Dify Chatflow."
+readme = "README.md"
+requires-python = ">=3.11,<4"
+dependencies = [
+  "powercontext[builtin,server]==1.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9,<10",
+  "ruff>=0.15,<1",
+]
+
+[project.scripts]
+dify-memory-bridge = "story_memory.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/story_memory"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ASYNC", "B", "E", "F", "I", "RUF", "S", "SIM", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/**" = ["RUF001"]
+"tests/**" = ["RUF001", "S101"]
