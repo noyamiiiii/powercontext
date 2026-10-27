@@ -157,11 +157,6 @@ FROM fts_candidates
 UNION ALL
 SELECT memory_artifact_id, head_revision, entry_id, entry_version_id, text, score, distance, channel
 FROM vector_candidates
-ORDER BY channel,
-         CASE WHEN channel = 'fts' THEN -score ELSE distance END,
-         memory_artifact_id,
-         entry_id,
-         entry_version_id
 """
 _OCEANBASE_TAGGED_HYBRID_SEARCH_SQL = """
 WITH fts_candidates AS (
@@ -225,11 +220,6 @@ FROM fts_candidates
 UNION ALL
 SELECT memory_artifact_id, head_revision, entry_id, entry_version_id, text, score, distance, channel
 FROM vector_candidates
-ORDER BY channel,
-         CASE WHEN channel = 'fts' THEN -score ELSE distance END,
-         memory_artifact_id,
-         entry_id,
-         entry_version_id
 """
 
 
@@ -571,8 +561,27 @@ class OceanBaseMemoryVectorIndex:
                 )
             ).mappings()
         )
-        fts_rows = [row for row in rows if str(row["channel"]) == "fts"]
-        vector_rows = [row for row in rows if str(row["channel"]) == "vector"]
+        # The native statement returns both ranked streams. Restore the same
+        # deterministic per-channel ordering that the standalone paths expose;
+        # the outer UNION order is intentionally left to the backend.
+        fts_rows = sorted(
+            (row for row in rows if str(row["channel"]) == "fts"),
+            key=lambda row: (
+                -(float(row["score"]) if row["score"] is not None else 0.0),
+                str(row["memory_artifact_id"]),
+                str(row["entry_id"]),
+                str(row["entry_version_id"]),
+            ),
+        )
+        vector_rows = sorted(
+            (row for row in rows if str(row["channel"]) == "vector"),
+            key=lambda row: (
+                float(row["distance"]) if row["distance"] is not None else float("inf"),
+                str(row["memory_artifact_id"]),
+                str(row["entry_id"]),
+                str(row["entry_version_id"]),
+            ),
+        )
         return MemorySearchChannels(
             fts=memory_channel_hits(fts_rows, request.memories),
             vector=memory_channel_hits(vector_rows, request.memories),
