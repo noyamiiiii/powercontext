@@ -45,12 +45,17 @@
 
 ## 必需记录
 
-| 记录 | 是否完成 | 存放位置 |
+文件命名、打码要求见 `docs/evidence/README.md`，截图直接放进 `docs/evidence/`。
+
+| 记录 | 状态 | 文件 |
 | --- | --- | --- |
-| Qoder 账号 UID | 待填写 | 提测表单或 `docs/evidence/` |
-| 需求拆解对话截图 | 待保存 | `docs/evidence/` |
-| 调试或代码修改截图 | 待保存 | `docs/evidence/` |
-| Qoder Sites 发布设置截图 | 待保存 | `docs/evidence/` |
-| 公开作品网址 | 待填写 | `docs/SUBMISSION.md` |
+| 需求拆解对话截图 | 已完成 | `docs/evidence/01-requirement-analysis.png`、`-2.png`（现有结构）、`-3.png`（闭环与失败路径）、`-4.png`（执行轨迹后半段） |
+| 运行与调试截图 | 部分完成 | `docs/evidence/02-run-and-debug.png` 待补；安装报错诊断见 `03-code-change-diff.png` |
+| 代码改动 diff 与测试输出 | 已完成 | `docs/evidence/03-code-change-diff.png`（变更轨迹）、`03-code-change-tests.png`（改动清单 + pytest / ruff 结果） |
+| Sites 编辑与发布设置截图 | 已完成 | `docs/evidence/04-sites-editor.png`、`04-sites-publish-settings.png`（可见范围：任何人都可访问） |
+| 公开访问复查截图 | 已放入 | `docs/evidence/04-sites-public-view.png`；若需标注无痕窗口，改名为 `04-sites-incognito-view.png` |
+| Qoder 账号 UID | 已完成 | 文本见 `docs/SUBMISSION.md`；界面截图 `docs/evidence/05-qoder-account-id.png`（账号 ID `01a17cfa-…`） |
+| 实测运行与验证记录 | 已完成 | `docs/evidence/2026-10-27-run-log.md` |
+| 公开作品网址与最终 commit | 已填写 | `docs/SUBMISSION.md` |
 
 截图中的姓名、邮箱和联系方式应打码。不要提交 Qoder 登录凭据。

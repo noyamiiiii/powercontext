@@ -4,29 +4,41 @@
 
 | 字段 | 内容 |
 | --- | --- |
-| 代码仓库地址 | `https://github.com/noyamiiiii/powercontext` |
+| 代码仓库地址 | <https://github.com/noyamiiiii/powercontext>（Public，fork 自 oceanbase/powercontext） |
+| 开发基线 | `2026-competition-ecosystem` @ `d647275c`（官方分支 tip） |
 | Branch | `feature/qoder-study-loop` |
-| Commit id | 提交本目录后填写该分支的最终 commit |
-| 作品链接 | Qoder Sites 发布后的公开网址 |
+| Commit id | 功能提交 `e6f3acb7bc7972cd672c2d3ab0a21cff5161646e`；文档提交后以提测当天 `git rev-parse HEAD` 的最终值为准 |
+| 作品链接 | <https://studyloop-63mjyalrdyh.qoder.zone>（可见范围：任何人都可访问） |
+| Qoder 账号 UID | `1816576073851490` |
+| Qoder 账号 ID | `01a17cfa-16e0-71da-a415-2923cd667570`（Qoder 设置界面所示，截图 `docs/evidence/05-qoder-account-id.png`） |
+
+平台表单如只有一栏「UID」，先填 `1816576073851490`；两个标识同时留档，避免因字段口径不同而填错。
 
 ## 仓库材料
 
 - 完整项目源码：`qoder/studyloop/`
 - 可运行界面：`qoder/frontend/`
 - Qoder Sites 展示页：`qoder/site/`
-- 依赖和运行配置：`qoder/pyproject.toml`
-- 运行说明：`qoder/README.md`
-- 验证样例：README 与集成测试
-- Qoder 开发记录：`qoder/docs/QODER_USAGE.md` 及实际截图
+- 依赖和运行配置：`qoder/pyproject.toml`（锁定 `powercontext[builtin,server]==1.2.0`）
+- 运行说明：`qoder/README.md` 的「运行」章节
+- 验证样例：`qoder/README.md` 的「验证样例」章节，附实测预期结果；集成测试在 `qoder/tests/`
+- Qoder 开发记录：`qoder/docs/evidence/`（对话与发布截图 + 实测运行日志）
 
 ## 提测前检查
 
-1. 在 Qoder 中完成 `QODER_USAGE.md` 的记录要求，确保主要开发过程可核对。
-2. 在全新环境中按 README 安装依赖并运行 `studyloop`。
-3. 完成一次“写入记忆、召回计划、保存复盘、再次读取”的验证。
-4. 运行 `uv run pytest` 和 `uv run ruff check .`。
-5. 通过 Qoder Sites 发布 `qoder/site/`，设置公开访问。
-6. 用浏览器无痕窗口打开作品网址。
-7. 将最终 commit、公开作品链接和 Qoder UID 填入平台。
+已完成：
+
+1. 全新环境按 README 安装并运行成功（`uv sync --extra dev` 46 秒，`uv run studyloop` 起在 8000 端口，`/health` 返回 `{"status":"ok","memory":"PowerContext SQLite"}`）。
+2. 完成一次「写入记忆 → 召回计划 → 保存复盘 → 再次召回」的验证，结果记录在 `docs/evidence/2026-10-27-run-log.md`。
+3. `uv run pytest` 3 passed；`uv run ruff check .` All checks passed。
+4. 通过 Qoder Sites 发布并设为公开访问，未登录浏览器可直接打开。
+5. 代码仓库为 Public，评审无需额外授权。
+
+提测前还需要：
+
+1. 补最后一张截图：`04-sites-incognito-view.png`（无痕窗口打开作品地址）。若已有的 `04-sites-public-view.png` 就是无痕窗口所截，直接改名即可。`02-run-and-debug.png` 可用 `03-code-change-diff.png` 里的安装报错诊断段作旁证，不强制单独补。
+2. 修改过 `qoder/site/` 后，在 Qoder Sites 重新点一次「发布」，线上版本才会更新；发布后用无痕窗口复查。
+3. 把最终 commit id、作品链接和 Qoder UID 填入测评平台。
+4. 评审结束前不要暂停或删除已提交的站点。
 
 赛题不允许只提交设计稿或截图。平台评审时需要实际运行项目，并核对 PowerContext 在计划生成中的作用。
