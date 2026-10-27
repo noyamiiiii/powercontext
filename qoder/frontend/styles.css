@@ -517,6 +517,14 @@ button:disabled {
   font-size: 13px;
 }
 
+.copy-plan-button {
+  margin-top: 20px;
+}
+
+.copy-status-error {
+  color: var(--danger);
+}
+
 .memory-section {
   padding: 0 0 96px;
 }

@@ -18,9 +18,12 @@ const outcomeButton = document.querySelector("#outcome-button");
 const outcomeStatus = document.querySelector("#outcome-status");
 const memoryCount = document.querySelector("#memory-count");
 const memoryList = document.querySelector("#memory-list");
+const copyPlanButton = document.querySelector("#copy-plan-button");
+const copyStatus = document.querySelector("#copy-status");
 
 let lastGoal = "";
 let lastMinutes = 30;
+let lastPlanText = "";
 
 minutesInput.addEventListener("input", () => {
   minutesOutput.value = `${minutesInput.value} 分钟`;
@@ -53,6 +56,8 @@ planForm.addEventListener("submit", async (event) => {
     setPlanState("result");
     outcomeSection.hidden = false;
     outcomeStatus.textContent = "";
+    copyStatus.textContent = "";
+    copyStatus.classList.remove("copy-status-error");
   } catch (error) {
     showPlanError(error.message || "无法连接学习记忆服务。");
   } finally {
@@ -96,9 +101,28 @@ outcomeForm.addEventListener("submit", async (event) => {
   }
 });
 
+copyPlanButton.addEventListener("click", async () => {
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(lastPlanText);
+    copied = true;
+  } catch {
+    copied = copyTextAsFallback(lastPlanText);
+  }
+  copyStatus.classList.toggle("copy-status-error", !copied);
+  copyStatus.textContent = copied
+    ? "已复制计划标题、学习步骤和召回摘要。"
+    : "复制失败，请在页面上手动选中计划文字后复制。";
+});
+
 function renderPlan(plan) {
   planDuration.textContent = `${plan.duration_minutes} 分钟`;
   recallSummary.textContent = plan.recall_summary;
+  lastPlanText = [
+    plan.title,
+    ...plan.steps.map((step, index) => `${index + 1}. ${step}`),
+    plan.recall_summary,
+  ].join("\n");
   planSteps.replaceChildren();
   plan.evidence.length = Math.min(plan.evidence.length, 6);
 
@@ -144,6 +168,19 @@ function setPlanState(state) {
 function showPlanError(message) {
   planError.textContent = message;
   setPlanState("error");
+}
+
+function copyTextAsFallback(text) {
+  const holder = document.createElement("textarea");
+  holder.value = text;
+  holder.setAttribute("readonly", "");
+  holder.style.position = "fixed";
+  holder.style.top = "-9999px";
+  document.body.append(holder);
+  holder.select();
+  const copied = document.execCommand("copy");
+  holder.remove();
+  return copied;
 }
 
 async function loadMemories() {
