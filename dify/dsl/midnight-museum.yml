@@ -1,0 +1,420 @@
+app:
+  description: 在午夜博物馆调查展品，用善意或恶作剧改变结局。守夜员通过 seekdb 记住你。
+  icon: 🌙
+  icon_background: '#17233D'
+  mode: workflow
+  name: 午夜博物馆 · 会记住你的守夜员
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - id: 43f9aaa4-6d37-4674-8c9b-65e54042d901
+    name: MUSEUM_BASE_URL
+    value: http://museum:8091
+    value_type: string
+    description: Docker 内部后端地址
+  - id: 43f9aaa4-6d37-4674-8c9b-65e54042d902
+    name: MUSEUM_TOOL_TOKEN
+    value: REPLACE_WITH_GENERATED_LOCAL_SECRET
+    value_type: secret
+    description: 由 bootstrap 创建，不提交真实值
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    nodes:
+    - id: start
+      type: custom
+      data:
+        type: start
+        title: 你想怎样调查？
+        desc: ''
+        selected: false
+        variables:
+        - variable: player_id
+          label: 玩家暗号（换窗口也用同一个）
+          type: text-input
+          required: true
+          max_length: 64
+          options: []
+        - variable: request_id
+          label: 回合编号（每次新行动换编号，重试保留）
+          type: text-input
+          required: true
+          max_length: 64
+          options: []
+        - variable: action
+          label: 行动，例如：调查铜铃
+          type: paragraph
+          required: true
+          max_length: 600
+          options: []
+      position:
+        x: 0
+        y: 220
+      positionAbsolute:
+        x: 0
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: encode
+      type: custom
+      data:
+        type: code
+        title: 安全编码玩家动作
+        desc: ''
+        selected: false
+        code_language: python3
+        code: "import json\ndef main(player: str, request: str, action: str) -> dict:\n\
+          \    return {\"output\": json.dumps({\"player_id\":player,\"request_id\"\
+          :request,\"action\":action},ensure_ascii=False)}"
+        variables:
+        - variable: player
+          value_selector:
+          - start
+          - player_id
+        - variable: request
+          value_selector:
+          - start
+          - request_id
+        - variable: action
+          value_selector:
+          - start
+          - action
+        outputs:
+          output:
+            type: string
+            children: null
+      position:
+        x: 310
+        y: 220
+      positionAbsolute:
+        x: 310
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: context
+      type: custom
+      data:
+        type: http-request
+        title: seekdb：检索线索与历史
+        desc: ''
+        selected: false
+        method: POST
+        url: '{{#env.MUSEUM_BASE_URL#}}/context'
+        authorization:
+          type: api-key
+          config:
+            type: bearer
+            api_key: '{{#env.MUSEUM_TOOL_TOKEN#}}'
+            header: ''
+        headers: Content-Type:application/json
+        params: ''
+        body:
+          type: json
+          data:
+          - key: ''
+            type: text
+            value: '{{#encode.output#}}'
+        timeout:
+          connect: 10
+          read: 180
+          write: 30
+        retry_config:
+          retry_enabled: true
+          max_retries: 1
+          retry_interval: 1000
+      position:
+        x: 620
+        y: 220
+      positionAbsolute:
+        x: 620
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: turn_request
+      type: custom
+      data:
+        type: code
+        title: 提取持久化回合标识
+        desc: ''
+        selected: false
+        code_language: python3
+        code: "import json\ndef main(context: str) -> dict:\n    return {\"output\"\
+          :json.dumps({\"turn_id\":json.loads(context)[\"turn_id\"]})}"
+        variables:
+        - variable: context
+          value_selector:
+          - context
+          - body
+        outputs:
+          output:
+            type: string
+            children: null
+      position:
+        x: 930
+        y: 220
+      positionAbsolute:
+        x: 930
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: narrate
+      type: custom
+      data:
+        type: http-request
+        title: Ollama：生成守夜员回应
+        desc: ''
+        selected: false
+        method: POST
+        url: '{{#env.MUSEUM_BASE_URL#}}/narrate'
+        authorization:
+          type: api-key
+          config:
+            type: bearer
+            api_key: '{{#env.MUSEUM_TOOL_TOKEN#}}'
+            header: ''
+        headers: Content-Type:application/json
+        params: ''
+        body:
+          type: json
+          data:
+          - key: ''
+            type: text
+            value: '{{#turn_request.output#}}'
+        timeout:
+          connect: 10
+          read: 180
+          write: 30
+        retry_config:
+          retry_enabled: true
+          max_retries: 1
+          retry_interval: 1000
+      position:
+        x: 1240
+        y: 220
+      positionAbsolute:
+        x: 1240
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: commit
+      type: custom
+      data:
+        type: http-request
+        title: seekdb：原子保存本次互动
+        desc: ''
+        selected: false
+        method: POST
+        url: '{{#env.MUSEUM_BASE_URL#}}/commit'
+        authorization:
+          type: api-key
+          config:
+            type: bearer
+            api_key: '{{#env.MUSEUM_TOOL_TOKEN#}}'
+            header: ''
+        headers: Content-Type:application/json
+        params: ''
+        body:
+          type: json
+          data:
+          - key: ''
+            type: text
+            value: '{{#turn_request.output#}}'
+        timeout:
+          connect: 10
+          read: 180
+          write: 30
+        retry_config:
+          retry_enabled: true
+          max_retries: 1
+          retry_interval: 1000
+      position:
+        x: 1550
+        y: 220
+      positionAbsolute:
+        x: 1550
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: display
+      type: custom
+      data:
+        type: code
+        title: 展开本回合结果
+        desc: ''
+        selected: false
+        code_language: python3
+        code: "import json\ndef main(result: str) -> dict:\n    return {\"output\"\
+          :json.loads(result)[\"display\"]}"
+        variables:
+        - variable: result
+          value_selector:
+          - commit
+          - body
+        outputs:
+          output:
+            type: string
+            children: null
+      position:
+        x: 1860
+        y: 220
+      positionAbsolute:
+        x: 1860
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    - id: end
+      type: custom
+      data:
+        type: end
+        title: 今晚的回声
+        desc: ''
+        selected: false
+        outputs:
+        - variable: answer
+          value_selector:
+          - display
+          - output
+          value_type: string
+        - variable: result
+          value_selector:
+          - commit
+          - body
+          value_type: string
+      position:
+        x: 2170
+        y: 220
+      positionAbsolute:
+        x: 2170
+        y: 220
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 110
+      selected: false
+    edges:
+    - id: start-encode
+      type: custom
+      source: start
+      target: encode
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: start
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: encode-context
+      type: custom
+      source: encode
+      target: context
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: http-request
+        isInIteration: false
+        isInLoop: false
+    - id: context-turn_request
+      type: custom
+      source: context
+      target: turn_request
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: http-request
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: turn_request-narrate
+      type: custom
+      source: turn_request
+      target: narrate
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: http-request
+        isInIteration: false
+        isInLoop: false
+    - id: narrate-commit
+      type: custom
+      source: narrate
+      target: commit
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: http-request
+        targetType: http-request
+        isInIteration: false
+        isInLoop: false
+    - id: commit-display
+      type: custom
+      source: commit
+      target: display
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: http-request
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: display-end
+      type: custom
+      source: display
+      target: end
+      sourceHandle: source
+      targetHandle: target
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.65

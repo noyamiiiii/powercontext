@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "real_dify_runs": 7,
+  "replay_exact": true,
+  "cross_request_memory": true,
+  "player_isolation": true,
+  "three_clues_and_ending": true,
+  "page_progress_restore": true,
+  "player_id": "verify_670fc76862f3",
+  "model": "qwen3:1.7b",
+  "storage": "seekdb",
+  "dify_version": "1.9.2"
+}

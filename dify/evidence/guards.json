@@ -1,0 +1,50 @@
+{
+  "unauthorized_401": true,
+  "invalid_identifier_422": true,
+  "blank_action_422": true,
+  "no_commit_without_model_409": true,
+  "request_reuse_with_other_action_409": true,
+  "stale_concurrent_commit_409": true,
+  "commit_retry_exact": true,
+  "player": "guards_722a43883950",
+  "model_outage_503": true,
+  "failed_model_leaves_player_unchanged": true,
+  "outage_store": {
+    "seekdb_version": "5.7.25-OceanBase seekdb-v1.4.0.0",
+    "original_exhibits": 4,
+    "players": [
+      {
+        "id": "guards_722a43883950_outage",
+        "version": 0,
+        "trust": 3,
+        "clues": "[]",
+        "ending": ""
+      }
+    ],
+    "turns": [
+      {
+        "player_id": "guards_722a43883950_outage",
+        "request_id": "model_outage",
+        "version": 0,
+        "action": "调查铜铃",
+        "model": null,
+        "committed": false,
+        "remembered_actions": [],
+        "retrieval_hits": [
+          {
+            "id": "guide",
+            "score": 0.559658471254473
+          },
+          {
+            "id": "bell",
+            "score": 0.12276785714285715
+          },
+          {
+            "id": "ledger",
+            "score": 0.06145251396648046
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "seekdb_version": "5.7.25-OceanBase seekdb-v1.4.0.0",
+  "original_exhibits": 4,
+  "players": [
+    {
+      "id": "verify_670fc76862f3",
+      "version": 5,
+      "trust": 3,
+      "clues": "[\"bell\", \"mirror\", \"ledger\"]",
+      "ending": "reunion"
+    },
+    {
+      "id": "verify_670fc76862f3_other",
+      "version": 1,
+      "trust": 3,
+      "clues": "[]",
+      "ending": ""
+    }
+  ],
+  "turns": [
+    {
+      "player_id": "verify_670fc76862f3",
+      "request_id": "9c49b4e333f0413da5cdbb062d2d05b0",
+      "version": 0,
+      "action": "调查铜铃，看看铃舌里藏着什么",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [],
+      "retrieval_hits": [
+        {
+          "id": "bell",
+          "score": 0.5911234583619145
+        },
+        {
+          "id": "guide",
+          "score": 0.559658471254473
+        },
+        {
+          "id": "ledger",
+          "score": 0.06145251396648046
+        }
+      ]
+    },
+    {
+      "player_id": "verify_670fc76862f3",
+      "request_id": "c1b53e1f93ec42b6a75b53fc136791a0",
+      "version": 1,
+      "action": "对着镜子做个恶作剧，假装自己是馆长",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [
+        "调查铜铃，看看铃舌里藏着什么"
+      ],
+      "retrieval_hits": [
+        {
+          "id": "guide",
+          "score": 0.7075642393613332
+        },
+        {
+          "id": "mirror",
+          "score": 0.17027863777089788
+        },
+        {
+          "id": "ledger",
+          "score": 0.06145251396648046
+        }
+      ]
+    },
+    {
+      "player_id": "verify_670fc76862f3",
+      "request_id": "f8c9a834e9b348ff8109322c9e1d73ce",
+      "version": 2,
+      "action": "调查镜子背面。你还记得我刚才的恶作剧吗？",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [
+        "调查铜铃，看看铃舌里藏着什么",
+        "对着镜子做个恶作剧，假装自己是馆长"
+      ],
+      "retrieval_hits": [
+        {
+          "id": "guide",
+          "score": 1.0348786015829043
+        },
+        {
+          "id": "mirror",
+          "score": 0.17027863777089788
+        },
+        {
+          "id": "ledger",
+          "score": 0.06145251396648046
+        }
+      ]
+    },
+    {
+      "player_id": "verify_670fc76862f3",
+      "request_id": "99b13f1f8efd4df09a454bd30d3cc61d",
+      "version": 3,
+      "action": "翻看登记簿第0017号记录",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [
+        "调查铜铃，看看铃舌里藏着什么",
+        "对着镜子做个恶作剧，假装自己是馆长",
+        "调查镜子背面。你还记得我刚才的恶作剧吗？"
+      ],
+      "retrieval_hits": [
+        {
+          "id": "ledger",
+          "score": 0.9022760737068491
+        },
+        {
+          "id": "bell",
+          "score": 0.34547738693467334
+        },
+        {
+          "id": "guide",
+          "score": 0.10587102983638115
+        }
+      ]
+    },
+    {
+      "player_id": "verify_670fc76862f3",
+      "request_id": "fad73a21575747f6a710807fbe343fbf",
+      "version": 4,
+      "action": "安抚守夜员，出示证据，揭晓真相",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [
+        "调查铜铃，看看铃舌里藏着什么",
+        "对着镜子做个恶作剧，假装自己是馆长",
+        "调查镜子背面。你还记得我刚才的恶作剧吗？",
+        "翻看登记簿第0017号记录"
+      ],
+      "retrieval_hits": [
+        {
+          "id": "guide",
+          "score": 1.596917814530558
+        },
+        {
+          "id": "mirror",
+          "score": 0.14304291287386217
+        },
+        {
+          "id": "bell",
+          "score": 0.13819095477386933
+        }
+      ]
+    },
+    {
+      "player_id": "verify_670fc76862f3_other",
+      "request_id": "7d0d2b29f1594a13917c12102b7f44d9",
+      "version": 0,
+      "action": "刚才我调查过铜铃吗？",
+      "model": "qwen3:1.7b",
+      "committed": true,
+      "remembered_actions": [],
+      "retrieval_hits": [
+        {
+          "id": "guide",
+          "score": 0.3802498771397619
+        },
+        {
+          "id": "bell",
+          "score": 0.12276785714285715
+        },
+        {
+          "id": "ledger",
+          "score": 0.06145251396648046
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,597 @@
+[
+  {
+    "workflow_run_id": "d83d0f0d-0d82-41c6-9fe1-b3e61cc05b17",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.003083,
+        "error": null,
+        "created_at": 1793099162,
+        "finished_at": 1793099162
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.020389,
+        "error": null,
+        "created_at": 1793099162,
+        "finished_at": 1793099162
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.033851,
+        "error": null,
+        "created_at": 1793099162,
+        "finished_at": 1793099162
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.017656,
+        "error": null,
+        "created_at": 1793099162,
+        "finished_at": 1793099162
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 4.948319,
+        "error": null,
+        "created_at": 1793099162,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.018386,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.018704,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.007604,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "0033dba5-f817-4269-9cf6-ec4df95380ef",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.0027,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.019289,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.011454,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.01973,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 0.00971,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.012121,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.020255,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.008916,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "45bde901-0095-47d3-8e92-ea80d7c7e20a",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.003062,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.01704,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.011224,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.017489,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099167
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 3.288947,
+        "error": null,
+        "created_at": 1793099167,
+        "finished_at": 1793099170
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.01842,
+        "error": null,
+        "created_at": 1793099170,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.017251,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.008445,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "9da5e4e4-518f-43a7-a563-8d35c250f307",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.002925,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.018987,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.0101,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.018825,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099171
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 4.45,
+        "error": null,
+        "created_at": 1793099171,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.014787,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.0184,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.007482,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "acc20c51-e810-4e21-956a-17654fac456f",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.002763,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.019318,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.009791,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.018674,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099175
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 5.518291,
+        "error": null,
+        "created_at": 1793099175,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.025537,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.021665,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.008978,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "6cc3ab66-3cb4-4b3f-aeb7-ee3085ed4858",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.003212,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.019712,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.013288,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.021116,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099181
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 7.026733,
+        "error": null,
+        "created_at": 1793099181,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.012234,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.020376,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.009802,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      }
+    ]
+  },
+  {
+    "workflow_run_id": "53912f55-ba28-4e74-82ab-d0fe8b79484f",
+    "nodes": [
+      {
+        "node_id": "start",
+        "node_type": "start",
+        "title": "你想怎样调查？",
+        "status": "succeeded",
+        "elapsed_time": 0.005082,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "encode",
+        "node_type": "code",
+        "title": "安全编码玩家动作",
+        "status": "succeeded",
+        "elapsed_time": 0.025663,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "context",
+        "node_type": "http-request",
+        "title": "seekdb：检索线索与历史",
+        "status": "succeeded",
+        "elapsed_time": 0.018074,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "turn_request",
+        "node_type": "code",
+        "title": "提取持久化回合标识",
+        "status": "succeeded",
+        "elapsed_time": 0.033196,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099188
+      },
+      {
+        "node_id": "narrate",
+        "node_type": "http-request",
+        "title": "Ollama：生成守夜员回应",
+        "status": "succeeded",
+        "elapsed_time": 4.549335,
+        "error": null,
+        "created_at": 1793099188,
+        "finished_at": 1793099193
+      },
+      {
+        "node_id": "commit",
+        "node_type": "http-request",
+        "title": "seekdb：原子保存本次互动",
+        "status": "succeeded",
+        "elapsed_time": 0.02989,
+        "error": null,
+        "created_at": 1793099193,
+        "finished_at": 1793099193
+      },
+      {
+        "node_id": "display",
+        "node_type": "code",
+        "title": "展开本回合结果",
+        "status": "succeeded",
+        "elapsed_time": 0.026202,
+        "error": null,
+        "created_at": 1793099193,
+        "finished_at": 1793099193
+      },
+      {
+        "node_id": "end",
+        "node_type": "end",
+        "title": "今晚的回声",
+        "status": "succeeded",
+        "elapsed_time": 0.011639,
+        "error": null,
+        "created_at": 1793099193,
+        "finished_at": 1793099193
+      }
+    ]
+  }
+]
