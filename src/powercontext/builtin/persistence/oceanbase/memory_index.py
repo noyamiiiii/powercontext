@@ -125,24 +125,32 @@ vector_candidates AS (
         heads.head_revision,
         heads.entry_id,
         heads.entry_version_id,
-        versions.text,
+        vector_limited.text,
         CAST(NULL AS DOUBLE) AS score,
-        l2_distance(vectors.embedding, :query_vector) AS distance,
+        vector_limited.distance,
         'vector' AS channel
-    FROM pc_memory_vector_entries AS vectors
+    FROM (
+        SELECT
+            vectors.memory_artifact_id,
+            vectors.entry_id,
+            vectors.entry_version_id,
+            versions.text,
+            l2_distance(vectors.embedding, :query_vector) AS distance
+        FROM pc_memory_vector_entries AS vectors
+        JOIN pc_memory_entry_versions AS versions
+          ON versions.scope_id = vectors.scope_id
+         AND versions.memory_artifact_id = vectors.memory_artifact_id
+         AND versions.entry_version_id = vectors.entry_version_id
+        WHERE vectors.scope_id = :scope_id
+          AND vectors.memory_artifact_id IN :memory_artifact_ids
+        ORDER BY l2_distance(vectors.embedding, :query_vector) APPROXIMATE
+        LIMIT :candidate_limit
+    ) AS vector_limited
     JOIN pc_memory_entry_heads AS heads
-      ON heads.scope_id = vectors.scope_id
-     AND heads.memory_artifact_id = vectors.memory_artifact_id
-     AND heads.entry_id = vectors.entry_id
-     AND heads.entry_version_id = vectors.entry_version_id
-    JOIN pc_memory_entry_versions AS versions
-      ON versions.scope_id = heads.scope_id
-     AND versions.memory_artifact_id = heads.memory_artifact_id
-     AND versions.entry_version_id = heads.entry_version_id
-    WHERE vectors.scope_id = :scope_id
-      AND vectors.memory_artifact_id IN :memory_artifact_ids
-    ORDER BY l2_distance(vectors.embedding, :query_vector) APPROXIMATE
-    LIMIT :candidate_limit
+      ON heads.scope_id = :scope_id
+     AND heads.memory_artifact_id = vector_limited.memory_artifact_id
+     AND heads.entry_id = vector_limited.entry_id
+     AND heads.entry_version_id = vector_limited.entry_version_id
 )
 SELECT memory_artifact_id, head_revision, entry_id, entry_version_id, text, score, distance, channel
 FROM fts_candidates
@@ -184,25 +192,33 @@ vector_candidates AS (
         heads.head_revision,
         heads.entry_id,
         heads.entry_version_id,
-        versions.text,
+        vector_limited.text,
         CAST(NULL AS DOUBLE) AS score,
-        l2_distance(vectors.embedding, :query_vector) AS distance,
+        vector_limited.distance,
         'vector' AS channel
-    FROM pc_memory_vector_entries AS vectors
+    FROM (
+        SELECT
+            vectors.memory_artifact_id,
+            vectors.entry_id,
+            vectors.entry_version_id,
+            versions.text,
+            l2_distance(vectors.embedding, :query_vector) AS distance
+        FROM pc_memory_vector_entries AS vectors
+        JOIN pc_memory_entry_versions AS versions
+          ON versions.scope_id = vectors.scope_id
+         AND versions.memory_artifact_id = vectors.memory_artifact_id
+         AND versions.entry_version_id = vectors.entry_version_id
+        WHERE vectors.scope_id = :scope_id
+          AND vectors.memory_artifact_id IN :memory_artifact_ids
+          /* VECTOR_TAGS */
+        ORDER BY l2_distance(vectors.embedding, :query_vector) APPROXIMATE
+        LIMIT :candidate_limit
+    ) AS vector_limited
     JOIN pc_memory_entry_heads AS heads
-      ON heads.scope_id = vectors.scope_id
-     AND heads.memory_artifact_id = vectors.memory_artifact_id
-     AND heads.entry_id = vectors.entry_id
-     AND heads.entry_version_id = vectors.entry_version_id
-    JOIN pc_memory_entry_versions AS versions
-      ON versions.scope_id = heads.scope_id
-     AND versions.memory_artifact_id = heads.memory_artifact_id
-     AND versions.entry_version_id = heads.entry_version_id
-    WHERE vectors.scope_id = :scope_id
-      AND vectors.memory_artifact_id IN :memory_artifact_ids
-      /* VECTOR_TAGS */
-    ORDER BY l2_distance(vectors.embedding, :query_vector)
-    LIMIT :candidate_limit
+      ON heads.scope_id = :scope_id
+     AND heads.memory_artifact_id = vector_limited.memory_artifact_id
+     AND heads.entry_id = vector_limited.entry_id
+     AND heads.entry_version_id = vector_limited.entry_version_id
 )
 SELECT memory_artifact_id, head_revision, entry_id, entry_version_id, text, score, distance, channel
 FROM fts_candidates
