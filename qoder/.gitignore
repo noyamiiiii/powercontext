@@ -1,0 +1,7 @@
+.data/
+.venv/
+.task-deps/
+.task-temp/
+__pycache__/
+.pytest_cache/
+*.py[cod]

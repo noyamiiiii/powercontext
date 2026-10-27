@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="StudyLoop 使用 PowerContext 记住学习偏好、薄弱点和复盘结果，让每次复习都能接上次的进度。"
+    />
+    <title>StudyLoop | 有记忆的学习教练</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="StudyLoop 首页">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>StudyLoop</span>
+      </a>
+      <div class="runtime-status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>PowerContext 本地记忆</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="workspace" aria-labelledby="workspace-title">
+        <div class="workspace-intro">
+          <div class="workspace-copy">
+            <p class="eyebrow">Personal study memory</p>
+            <h1 id="workspace-title">让这次复习，接上上次的你。</h1>
+            <p class="lead">
+              写下今天想学的内容。StudyLoop 会从 PowerContext 找回你的学习偏好、薄弱点和历史进度，再生成一段可以马上开始的计划。
+            </p>
+          </div>
+        </div>
+
+        <div class="planner-layout">
+          <section class="input-panel" aria-labelledby="planner-title">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">New session</p>
+                <h2 id="planner-title">今天学什么？</h2>
+              </div>
+              <span class="memory-count" id="memory-count">正在读取记忆</span>
+            </div>
+
+            <form id="plan-form">
+              <label for="goal">学习目标</label>
+              <textarea
+                id="goal"
+                name="goal"
+                rows="4"
+                placeholder="例如：复习线性代数里的矩阵相似与特征值"
+                required
+              ></textarea>
+
+              <label for="minutes">可用时间</label>
+              <div class="time-row">
+                <input id="minutes" name="minutes" type="range" min="10" max="90" step="5" value="30" />
+                <output id="minutes-output" for="minutes">30 分钟</output>
+              </div>
+
+              <button class="primary-button" type="submit" id="plan-button">
+                <span>生成记忆复习计划</span>
+              </button>
+              <p class="form-help">计划中的学习偏好与薄弱点只会来自 PowerContext 的真实召回结果。</p>
+            </form>
+          </section>
+
+          <section class="result-panel" aria-labelledby="result-title">
+            <div class="section-heading result-heading">
+              <div>
+                <p class="section-label">Current plan</p>
+                <h2 id="result-title">今天的计划</h2>
+              </div>
+              <span class="plan-duration" id="plan-duration">等待输入</span>
+            </div>
+
+            <div id="plan-empty" class="empty-state">
+              <span class="empty-glyph" aria-hidden="true">01</span>
+              <h3>先从一个具体目标开始</h3>
+              <p>目标越具体，召回的历史记忆越相关。例如写出课程、章节和想解决的问题。</p>
+            </div>
+
+            <div id="plan-loading" class="loading-state" hidden aria-live="polite">
+              <div class="skeleton skeleton-short"></div>
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+              <p>正在从 PowerContext 召回相关记忆</p>
+            </div>
+
+            <div id="plan-result" hidden aria-live="polite">
+              <p class="recall-summary" id="recall-summary"></p>
+              <ol class="plan-steps" id="plan-steps"></ol>
+              <div class="evidence-block">
+                <div class="evidence-heading">
+                  <h3>这次用到的记忆</h3>
+                  <span id="evidence-count"></span>
+                </div>
+                <div id="evidence-list" class="evidence-list"></div>
+              </div>
+            </div>
+
+            <div id="plan-error" class="error-state" hidden role="alert"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="outcome-section" id="outcome-section" hidden aria-labelledby="outcome-title">
+        <div class="outcome-copy">
+          <p class="eyebrow">Close the loop</p>
+          <h2 id="outcome-title">把结果留给下一次。</h2>
+          <p>完成后记录卡住的地方。下一次生成计划时，这段复盘会再次从 PowerContext 被找回来。</p>
+        </div>
+        <form id="outcome-form" class="outcome-form">
+          <label for="reflection">这次复习留下了什么？</label>
+          <textarea
+            id="reflection"
+            name="reflection"
+            rows="4"
+            placeholder="例如：可对角化的判断还不够熟，下次先做三个反例"
+            required
+          ></textarea>
+          <label class="check-field">
+            <input id="completed" name="completed" type="checkbox" checked />
+            <span>今天完成了这段计划</span>
+          </label>
+          <button class="secondary-button" type="submit" id="outcome-button">保存到 PowerContext</button>
+          <p class="outcome-status" id="outcome-status" role="status"></p>
+        </form>
+      </section>
+
+      <section class="memory-section" aria-labelledby="memory-title">
+        <div class="memory-heading">
+          <div>
+            <p class="eyebrow">Persistent context</p>
+            <h2 id="memory-title">记忆不是聊天记录。</h2>
+          </div>
+          <p>
+            StudyLoop 只保存对下一次学习有用的事实。每条记忆都有稳定的 citation，评审可以核对它何时被写入、何时被召回。
+          </p>
+        </div>
+        <div id="memory-list" class="memory-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>StudyLoop × PowerContext</p>
+      <p>学习上下文在本地 SQLite 中持久保存。</p>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

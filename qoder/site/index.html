@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="StudyLoop 是一个使用 PowerContext 保存学习偏好、薄弱点与复盘记录的学习教练。"
+    />
+    <title>StudyLoop | 有记忆的学习教练</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="wordmark" href="#top">
+        <span class="wordmark-block" aria-hidden="true">S</span>
+        <span>StudyLoop</span>
+      </a>
+      <nav aria-label="主导航">
+        <a href="#problem">为什么做</a>
+        <a href="#workflow">如何记忆</a>
+        <a href="#evidence">技术验证</a>
+        <a class="nav-source" href="https://github.com/noyamiiiii/powercontext">查看源码</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="hero-note">StudyLoop × PowerContext</p>
+          <h1 id="hero-title">复习不该每次从空白开始。</h1>
+          <p class="hero-lead">
+            记住你的薄弱点、学习偏好和上次复盘，让下一次复习直接进入今天真正需要练的部分。
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="#workflow">看一条记忆如何被复用</a>
+            <a class="text-link" href="https://github.com/noyamiiiii/powercontext/tree/feature/qoder-study-loop/qoder">
+              阅读运行说明
+            </a>
+          </div>
+        </div>
+        <figure class="product-shot">
+          <img
+            src="./assets/app-preview.png"
+            alt="StudyLoop 应用界面，显示学习目标、30 分钟复习计划和被召回的 PowerContext 记忆"
+            width="1440"
+            height="1080"
+          />
+          <figcaption>
+            <span>本地运行界面</span>
+            <span>PowerContext 提供检索与引用</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="signal-bar" aria-label="项目能力摘要">
+        <p><strong>30 分钟</strong> 一次完整学习回路</p>
+        <p><strong>4 类</strong> 可持续复用的学习记忆</p>
+        <p><strong>1 条 citation</strong> 每次召回都可核对来源</p>
+      </section>
+
+      <section class="problem" id="problem" aria-labelledby="problem-title">
+        <div class="problem-statement">
+          <p class="section-index">01 / 问题</p>
+          <h2 id="problem-title">笔记很多，真正的上下文却总是丢失。</h2>
+        </div>
+        <div class="problem-detail">
+          <p>
+            学完一章、关掉页面、隔几天再打开，学习者往往只记得“我学过”，却忘了上次卡在哪里、什么方法有效、下一步该练什么。
+          </p>
+          <p>
+            StudyLoop 把学习过程里对未来有用的事实写进 PowerContext。下一次不必翻聊天记录，也不用重新解释自己。
+          </p>
+        </div>
+      </section>
+
+      <section class="workflow" id="workflow" aria-labelledby="workflow-title">
+        <div class="workflow-heading">
+          <p class="section-index">02 / 工作方式</p>
+          <h2 id="workflow-title">一段计划，三个可验证动作。</h2>
+        </div>
+        <ol class="workflow-list">
+          <li>
+            <span class="step-number">01</span>
+            <div>
+              <h3>写入真实学习上下文</h3>
+              <p>保存学习偏好、薄弱点、进度和每次复盘。每条内容都进入同一个独立 Scope。</p>
+            </div>
+            <code>runtime.memory.for_scope(scope).remember(...)</code>
+          </li>
+          <li>
+            <span class="step-number">02</span>
+            <div>
+              <h3>为新目标召回相关记忆</h3>
+              <p>用户输入“矩阵相似与特征值”，应用使用 SQLite FTS 搜索历史学习记忆。</p>
+            </div>
+            <code>SearchMemoryRequest(query=goal, mode="fts")</code>
+          </li>
+          <li>
+            <span class="step-number">03</span>
+            <div>
+              <h3>生成可解释的计划并闭环</h3>
+              <p>计划只使用实际返回的证据。完成后写下复盘，再作为 outcome 记忆保存。</p>
+            </div>
+            <code>MemoryHit → plan evidence → new outcome</code>
+          </li>
+        </ol>
+      </section>
+
+      <section class="evidence" id="evidence" aria-labelledby="evidence-title">
+        <div class="evidence-copy">
+          <p class="section-index">03 / 技术验证</p>
+          <h2 id="evidence-title">记忆必须能被指出来。</h2>
+          <p>
+            页面同时展示召回摘要、计划步骤和引用的 Artifact Revision。评审可以打开 SQLite 数据目录，也可以用同一组样例复现。
+          </p>
+          <dl>
+            <div>
+              <dt>存储</dt>
+              <dd>PowerContext Embedded Runtime + SQLite</dd>
+            </div>
+            <div>
+              <dt>检索</dt>
+              <dd>Scoped Memory FTS</dd>
+            </div>
+            <div>
+              <dt>验证</dt>
+              <dd>样例计划、记忆列表、citation round trip</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <span>Example recall</span>
+            <button type="button" id="copy-query">复制运行命令</button>
+          </div>
+          <pre><code id="run-command">cd qoder
+uv sync
+uv run studyloop</code></pre>
+          <div class="memory-example">
+            <span>RECALLED MEMORY</span>
+            <p>薄弱点：线性代数中矩阵相似与特征值的关系容易混淆，需要先判断可对角化条件。</p>
+            <code>atomic-memory/...@revision · entry citation</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="verification" aria-labelledby="verification-title">
+        <div>
+          <p class="section-index">04 / 复现</p>
+          <h2 id="verification-title">三步看到记忆真的发挥作用。</h2>
+        </div>
+        <div class="verification-path">
+          <p><span>1</span>输入“复习线性代数里的矩阵相似与特征值”，选择 30 分钟。</p>
+          <p><span>2</span>查看计划里的“薄弱点”依据和引用的 Memory Revision。</p>
+          <p><span>3</span>保存一句复盘，刷新页面，确认新的 outcome 出现在长期记忆列表。</p>
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <div>
+          <p class="section-index">StudyLoop</p>
+          <h2 id="closing-title">下一次打开时，它记得你的下一步。</h2>
+        </div>
+        <a class="primary-link" href="https://github.com/noyamiiiii/powercontext/tree/feature/qoder-study-loop/qoder">
+          查看完整项目
+        </a>
+      </section>
+    </main>
+
+    <footer>
+      <p>StudyLoop 2026</p>
+      <p>Built around PowerContext</p>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
