@@ -1,0 +1,44 @@
+{
+  "stage": "embed",
+  "model": "Xenova/bge-small-zh-v1.5",
+  "dim": 512,
+  "node": "v22.22.2",
+  "platform": "win32-x64",
+  "batchSize": 8,
+  "topK": 10,
+  "refreshMode": "always",
+  "docs": 24,
+  "queries": 12,
+  "rows": [
+    {
+      "dtype": "int8",
+      "loadMs": 169.98770000000002,
+      "docEmbedMs": 105.8297,
+      "docThroughput": 226.77943904215925,
+      "writeMs": null,
+      "refreshMs": null,
+      "queryEmbedMedianMs": 2.0930999999999926,
+      "dbMedianMs": null,
+      "e2eMedianMs": 2.1178999999999633,
+      "recall5": 1,
+      "recall10": 1,
+      "ndcg10": 0.9625542118933037,
+      "mrr": 0.9583333333333334
+    },
+    {
+      "dtype": "fp32",
+      "loadMs": 141.61739999999998,
+      "docEmbedMs": 139.70699999999988,
+      "docThroughput": 171.78809937941563,
+      "writeMs": null,
+      "refreshMs": null,
+      "queryEmbedMedianMs": 3.8094999999999573,
+      "dbMedianMs": null,
+      "e2eMedianMs": 3.8636999999998807,
+      "recall5": 1,
+      "recall10": 1,
+      "ndcg10": 1,
+      "mrr": 1
+    }
+  ]
+}

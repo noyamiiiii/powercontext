@@ -1,0 +1,44 @@
+{
+  "name": "seekdb-stepfun-mini-kb",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-side embedding + seekdb hybrid retrieval mini knowledge base (2026 OceanBase competition / StepFun track)",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "setup": "node scripts/prepare-runtime.mjs && node scripts/fetch-model.mjs",
+    "fetch:bindings": "node scripts/fetch-bindings.mjs",
+    "fetch:model": "node scripts/fetch-model.mjs",
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts",
+    "bench": "tsx scripts/bench-hybrid.ts",
+    "test": "tsx --test tests/contract.test.ts"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.5.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "seekdb": "1.4.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}

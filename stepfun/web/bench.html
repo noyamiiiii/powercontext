@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>端侧推理基准 · WebGPU vs WASM</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --card: #171a21;
+        --line: #262b35;
+        --fg: #e6e9ef;
+        --dim: #98a1b0;
+        --accent: #6ea8fe;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 28px 20px 60px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.65 ui-sans-serif, system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+      .wrap { max-width: 900px; margin: 0 auto; }
+      h1 { margin: 0 0 4px; font-size: 20px; font-weight: 650; letter-spacing: 0.2px; }
+      .sub { margin: 0 0 18px; color: var(--dim); font-size: 13px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 14px;
+      }
+      .env { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 18px; }
+      .env div { font-size: 13px; }
+      .env b { color: var(--dim); font-weight: 500; margin-right: 6px; }
+      button {
+        font: inherit;
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: 7px;
+        border: 1px solid var(--line);
+        background: #1e222b;
+        color: var(--fg);
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) { border-color: var(--accent); }
+      button.primary { background: var(--accent); border-color: var(--accent); color: #0b1020; font-weight: 600; }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+      th, td { padding: 7px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+      th { color: var(--dim); font-weight: 500; font-size: 12px; text-transform: none; }
+      td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      tbody tr:last-child td { border-bottom: none; }
+      pre {
+        margin: 12px 0 0;
+        padding: 12px;
+        background: #0b0e13;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow-x: auto;
+        font: 12px/1.6 ui-monospace, "Cascadia Code", Consolas, monospace;
+        color: var(--dim);
+        max-height: 380px;
+      }
+      .hint { color: var(--dim); font-size: 12.5px; margin: 10px 0 0; }
+      .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; border: 1px solid var(--line); color: var(--dim); }
+      .tag.ok { color: var(--ok); border-color: #23543a; }
+      .tag.warn { color: var(--warn); border-color: #5a4416; }
+      .bar { height: 4px; background: #222733; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+      .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+      code { background: #222733; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    </style>
+    <script>
+      // Read once by web/src/lib/embedder.ts at module scope, so it must be set
+      // before the module script below is evaluated.
+      var search = new URL(location.href).searchParams;
+      if (search.get("threads")) window.__MINIKB_WASM_THREADS__ = Number(search.get("threads"));
+    </script>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>端侧推理基准 · WebGPU vs WASM</h1>
+      <p class="sub">
+        只测<strong>推理本身</strong>，不连数据库。用来复现 <code>BENCHMARK.md</code> 的表 1 / 表 2。
+      </p>
+
+      <div class="card">
+        <div class="env" id="env"></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <button class="primary" id="run">开始基准</button>
+          <button id="copy" disabled>复制 JSON</button>
+          <button id="download" disabled>下载 JSON</button>
+          <span class="hint" style="margin: 0" id="status">空闲</span>
+        </div>
+        <div class="bar"><i id="bar"></i></div>
+        <p class="hint">
+          依次测量两个后端：自动选型（WebGPU 优先，失败降级）与强制 WASM。每个后端跑
+          加载、首个向量、24 段批量向量化、12 条查询延迟、batch size 扫描（1/4/8/16）。
+        </p>
+      </div>
+
+      <div class="card" id="resultCard" hidden>
+        <table id="result"></table>
+        <p class="hint" id="note"></p>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content: space-between">
+          <span class="tag" id="threadTag">WASM 线程数：1</span>
+          <span class="hint" style="margin: 0">
+            多线程 WASM 需要 <code>?threads=4</code>；
+            多数机器上 onnxruntime-web 的 worker pool 会卡死，默认单线程。
+          </span>
+        </div>
+        <pre id="log">等待开始…</pre>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createEmbedder } from "/src/lib/embedder.ts";
+
+      /**
+       * Fixed corpus, deliberately independent of the demo content: throughput
+       * must not change if someone edits shared/sampleCorpus.ts.
+       */
+      const DOCS = Array.from({ length: 24 }, (_, i) => ({
+        id: `d${i}`,
+        text:
+          `第 ${i + 1} 段：向量检索把文本映射到高维空间，用余弦相似度衡量语义接近程度。` +
+          `混合检索在数据库内部融合全文与向量两路召回，RRF 按照排名倒数求和给出融合分数。` +
+          `端侧推理在浏览器里完成，模型权重从本地静态目录加载，向量与原文都不会离开用户设备。`,
+      }));
+      const QUERIES = Array.from(
+        { length: 12 },
+        (_, i) => `第 ${i + 1} 个查询：混合检索的融合分数是怎么算出来的`,
+      );
+      const BATCH_SIZES = [1, 4, 8, 16];
+      const DOC_BATCH = 8;
+
+      const $ = (id) => document.getElementById(id);
+      const envBox = $("env");
+      const logBox = $("log");
+      const statusEl = $("status");
+      const barEl = $("bar");
+
+      const median = (values) => {
+        const s = [...values].sort((a, b) => a - b);
+        const m = Math.floor(s.length / 2);
+        return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+      };
+      const p90 = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length * 0.9)];
+      const log = (line) => {
+        logBox.textContent += `\n${line}`;
+      };
+
+      const threads = window.__MINIKB_WASM_THREADS__ ?? 1;
+      $("threadTag").textContent = `WASM 线程数：${threads}`;
+
+      const summary = {
+        gpu: navigator.gpu ? "present" : "absent",
+        crossOriginIsolated: window.crossOriginIsolated,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        userAgent: navigator.userAgent,
+        wasmThreads: threads,
+        docs: DOCS.length,
+        queries: QUERIES.length,
+        runs: [],
+      };
+
+      const envRows = [
+        ["WebGPU", navigator.gpu ? "可用" : "不可用", navigator.gpu ? "ok" : "warn"],
+        ["跨源隔离", window.crossOriginIsolated ? "是（SharedArrayBuffer 可用）" : "否", window.crossOriginIsolated ? "ok" : "warn"],
+        ["CPU 逻辑核", String(navigator.hardwareConcurrency ?? "?"), ""],
+        ["WASM 线程", String(threads), threads > 1 ? "warn" : "ok"],
+      ];
+      envBox.innerHTML = envRows
+        .map(
+          ([k, v, cls]) =>
+            `<div><b>${k}</b><span class="tag ${cls}">${v}</span></div>`,
+        )
+        .join("");
+
+      async function measure(label, forceDevice) {
+        log(`\n== ${label} ==`);
+        const t0 = performance.now();
+        const emb = await createEmbedder({
+          modelId: "Xenova/bge-small-zh-v1.5",
+          pooling: "cls",
+          forceDevice,
+          attemptTimeoutMs: 90_000,
+        });
+        const loadMs = performance.now() - t0;
+        log(`后端=${emb.backend.label}  线程=${emb.wasmThreads}  加载+warmup=${loadMs.toFixed(0)}ms  维度=${emb.dim}`);
+
+        const coldStart = performance.now();
+        await emb.embedDocuments([DOCS[0].text], 1);
+        const firstMs = performance.now() - coldStart;
+        log(`首个单条向量=${firstMs.toFixed(1)}ms`);
+
+        const docResult = await emb.embedDocuments(DOCS.map((d) => d.text), DOC_BATCH);
+        const throughput = (docResult.vectors.length / docResult.ms) * 1000;
+        log(`批量向量化 n=${docResult.vectors.length} 总耗时=${docResult.ms.toFixed(0)}ms 吞吐=${throughput.toFixed(1)} doc/s`);
+
+        const queryTimes = [];
+        for (const q of QUERIES) {
+          const start = performance.now();
+          await emb.embedQuery(`为这个句子生成表示以用于检索相关文章：${q}`);
+          queryTimes.push(performance.now() - start);
+        }
+        log(`查询延迟 中位=${median(queryTimes).toFixed(2)}ms p90=${p90(queryTimes).toFixed(2)}ms`);
+
+        const sweep = [];
+        for (const batchSize of BATCH_SIZES) {
+          const start = performance.now();
+          const r = await emb.embedDocuments(DOCS.map((d) => d.text), batchSize);
+          const elapsed = performance.now() - start;
+          sweep.push({
+            batchSize,
+            ms: Number(elapsed.toFixed(1)),
+            docsPerSec: Number(((r.vectors.length / elapsed) * 1000).toFixed(1)),
+          });
+        }
+        log(`batch 扫描 ${sweep.map((s) => `bs${s.batchSize}=${s.docsPerSec} doc/s`).join("  ")}`);
+
+        const run = {
+          label,
+          backend: emb.backend.label,
+          device: emb.backend.device,
+          dtype: emb.backend.dtype,
+          wasmThreads: emb.wasmThreads,
+          loadMs: Number(loadMs.toFixed(0)),
+          firstEmbedMs: Number(firstMs.toFixed(1)),
+          docBatch: DOC_BATCH,
+          docEmbedMs: Number(docResult.ms.toFixed(1)),
+          docThroughput: Number(throughput.toFixed(1)),
+          queryMedianMs: Number(median(queryTimes).toFixed(2)),
+          queryP90Ms: Number(p90(queryTimes).toFixed(2)),
+          sweep,
+        };
+        summary.runs.push(run);
+        await emb.dispose();
+        render();
+        return run;
+      }
+
+      function render() {
+        if (summary.runs.length === 0) return;
+        $("resultCard").hidden = false;
+        const best = Math.max(...summary.runs.map((r) => r.docThroughput));
+        const body = summary.runs
+          .map(
+            (r) => `<tr>
+              <td>${r.backend}</td>
+              <td class="num">${r.loadMs} ms</td>
+              <td class="num">${r.firstEmbedMs} ms</td>
+              <td class="num">${r.docEmbedMs} ms</td>
+              <td class="num"><strong>${r.docThroughput}</strong> doc/s${r.docThroughput === best ? " ★" : ""}</td>
+              <td class="num">${r.queryMedianMs} ms</td>
+              <td class="num">${r.queryP90Ms} ms</td>
+            </tr>`,
+          )
+          .join("");
+        const sweepRows = summary.runs
+          .map(
+            (r) => `<tr><td>${r.backend} · batch 扫描</td>${r.sweep
+              .map((s) => `<td class="num">${s.docsPerSec}</td>`)
+              .join("")}</tr>`,
+          )
+          .join("");
+        $("result").innerHTML = `
+          <thead>
+            <tr>
+              <th>后端</th><th class="num">加载+warmup</th><th class="num">首个向量</th>
+              <th class="num">${DOCS.length} 段 (bs=${DOC_BATCH})</th><th class="num">文档吞吐</th>
+              <th class="num">查询中位</th><th class="num">查询 p90</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+          <thead><tr><th colspan="7" style="padding-top:14px">batch size 扫描 · doc/s</th></tr>
+            <tr><th>后端</th>${BATCH_SIZES.map((b) => `<th class="num">bs=${b}</th>`).join("")}</tr>
+          </thead>
+          <tbody>${sweepRows}</tbody>`;
+        $("note").textContent =
+          summary.runs.length > 1
+            ? `吞吐比 ${(best / Math.min(...summary.runs.map((r) => r.docThroughput))).toFixed(1)}x。加载时间是反过来的：WASM 会话更轻，WebGPU 要付 shader 编译与显存上传。`
+            : "";
+        $("copy").disabled = false;
+        $("download").disabled = false;
+      }
+
+      $("run").addEventListener("click", async () => {
+        const btn = $("run");
+        btn.disabled = true;
+        logBox.textContent = "";
+        summary.runs.length = 0;
+        $("resultCard").hidden = true;
+        const steps = ["auto", "wasm"];
+        let done = 0;
+        const tick = (text) => {
+          statusEl.textContent = text;
+          barEl.style.width = `${(done / steps.length) * 100}%`;
+        };
+        try {
+          for (const [i, step] of steps.entries()) {
+            tick(`运行中 ${i + 1}/${steps.length}：${step === "auto" ? "自动选型" : "强制 WASM"}`);
+            try {
+              await measure(step === "auto" ? "自动选型" : "强制 WASM", step === "auto" ? undefined : "wasm");
+            } catch (err) {
+              log(`${step} 失败：${err instanceof Error ? err.message : String(err)}`);
+            }
+            done = i + 1;
+          }
+          tick("完成");
+          statusEl.textContent = "完成";
+        } finally {
+          barEl.style.width = "100%";
+          btn.disabled = false;
+        }
+      });
+
+      const json = () => JSON.stringify(summary, null, 2);
+      $("copy").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(json());
+        $("copy").textContent = "已复制";
+        setTimeout(() => ($("copy").textContent = "复制 JSON"), 1500);
+      });
+      $("download").addEventListener("click", () => {
+        const blob = new Blob([json()], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `bench-web-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      // `?autorun=1` starts immediately: handy for headless capture and for a
+      // judge who just wants the numbers without hunting for the button.
+      if (search.get("autorun") === "1") {
+        log("autorun=1，自动开始…");
+        $("run").click();
+      }
+    </script>
+  </body>
+</html>

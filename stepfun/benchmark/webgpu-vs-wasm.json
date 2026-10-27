@@ -1,0 +1,72 @@
+{
+  "gpu": "present",
+  "crossOriginIsolated": true,
+  "runs": [
+    {
+      "label": "auto",
+      "backend": "WebGPU · FP16",
+      "device": "webgpu",
+      "dtype": "fp16",
+      "loadMs": 2775,
+      "firstEmbedMs": 170.6,
+      "docEmbedMs": 136.2,
+      "docThroughput": 176.2,
+      "queryMedianMs": 17.12,
+      "sweep": [
+        {
+          "batchSize": 1,
+          "ms": 505.3,
+          "docsPerSec": 47.5
+        },
+        {
+          "batchSize": 4,
+          "ms": 122.8,
+          "docsPerSec": 195.5
+        },
+        {
+          "batchSize": 8,
+          "ms": 77.2,
+          "docsPerSec": 310.8
+        },
+        {
+          "batchSize": 16,
+          "ms": 97.8,
+          "docsPerSec": 245.3
+        }
+      ]
+    },
+    {
+      "label": "wasm",
+      "backend": "WASM · INT8",
+      "device": "wasm",
+      "dtype": "int8",
+      "loadMs": 292,
+      "firstEmbedMs": 194.2,
+      "docEmbedMs": 4325.9,
+      "docThroughput": 5.5,
+      "queryMedianMs": 62.4,
+      "sweep": [
+        {
+          "batchSize": 1,
+          "ms": 4483.3,
+          "docsPerSec": 5.4
+        },
+        {
+          "batchSize": 4,
+          "ms": 4307.8,
+          "docsPerSec": 5.6
+        },
+        {
+          "batchSize": 8,
+          "ms": 4040.2,
+          "docsPerSec": 5.9
+        },
+        {
+          "batchSize": 16,
+          "ms": 4205.5,
+          "docsPerSec": 5.7
+        }
+      ]
+    }
+  ]
+}
