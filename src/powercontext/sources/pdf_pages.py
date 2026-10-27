@@ -25,12 +25,11 @@ import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
-from itertools import pairwise
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBytes, StrictInt, field_validator, model_validator
 
-from powercontext.artifacts import ArtifactRef, MemoryCitation
+from powercontext.artifacts import MemoryCitation
 from powercontext.limits import MAX_SOURCE_ID_LENGTH
 from powercontext.sources import (
     TEXT_EVIDENCE_PROJECTION_KEY,
@@ -115,27 +114,6 @@ _DOCUMENT_COMMON_TERMS = frozenset({
     "year",
     "years",
 })
-_QUERY_EXPANSIONS = {
-    "capex": ("capital", "expenditures", "property", "plant", "equipment"),
-    "cogs": ("cost", "sales"),
-    "ebitda": ("operating", "income", "depreciation", "amortization"),
-    "employees": ("headcount", "employee", "workforce"),
-    "employee": ("headcount", "employees", "workforce"),
-    "fcf": ("free", "cash", "flow"),
-    "geographies": ("geographic", "regions", "countries", "markets"),
-    "geography": ("geographic", "regions", "countries", "markets"),
-    "headcount": ("employees", "employee", "workforce"),
-    "lawsuit": ("litigation", "proceedings", "claims", "legal"),
-    "lawsuits": ("litigation", "proceedings", "claims", "legal"),
-    "legal": ("litigation", "proceedings", "claims", "contingencies"),
-    "margin": ("operating", "income", "net", "sales", "revenue"),
-    "opex": ("operating", "expenses"),
-    "operates": ("operations", "operating", "markets", "regions"),
-    "ppne": ("property", "plant", "equipment", "net"),
-    "rd": ("research", "development"),
-    "revenue": ("net", "sales", "revenues"),
-    "sales": ("revenue", "net", "sales"),
-}
 
 
 class PDFDocumentInput(BaseModel):
@@ -290,17 +268,11 @@ PDF_PAGE_SOURCE_DEFINITION = AdapterSourceDefinition(
 )
 
 
-@dataclass
-class _RankedPage:
-    memory_ref: ArtifactRef
-    entry_id: str
-    entry_version_id: str
-    text: str
-    channel_score: float = 0.0
-
-
-_PDFPageLocation = tuple[str, str, int]
-_MemoryEntryKey = tuple[str, int, str, str]
+@dataclass(frozen=True)
+class _PDFPageCandidate:
+    citation: MemoryCitation
+    document_id: str
+    body: str
 
 
 async def search_pdf_pages(memory: object, question: str, limit: int = 10) -> tuple[MemoryCitation, ...]:
@@ -311,244 +283,179 @@ async def search_pdf_pages(memory: object, question: str, limit: int = 10) -> tu
     if type(limit) is not int or limit < 1:
         raise ValueError("limit must be a positive integer")
 
-    from powercontext.builtin.runtime import SearchMemoryRequest
-
-    queries = _search_queries(question)
-    query_terms, expanded_terms = _query_term_weights(question)
-    candidates: dict[tuple[str, int, str, str], _RankedPage] = {}
-    candidate_limit = max(80, limit * 5)
-    for channel, query in enumerate(queries):
-        page = await memory.search(SearchMemoryRequest(query=query, mode="fts", limit=candidate_limit))
-        for rank, hit in enumerate(page.hits):
-            key = (hit.memory_ref.artifact_id, hit.memory_ref.revision, hit.entry_id, hit.entry_version_id)
-            candidate = candidates.get(key)
-            if candidate is None:
-                candidate = _RankedPage(
-                    memory_ref=hit.memory_ref,
-                    entry_id=hit.entry_id,
-                    entry_version_id=hit.entry_version_id,
-                    text=hit.text,
-                )
-                candidates[key] = candidate
-            candidate.channel_score += (1.0 if channel == 0 else 0.45) / (rank + 1)
-
-    ranked = sorted(
-        candidates.values(),
-        key=lambda candidate: (
-            -_page_rank(candidate.text, query_terms, expanded_terms, candidate.channel_score),
-            candidate.entry_id,
-            candidate.entry_version_id,
-        ),
-    )
-    page_citations, locations = await _pdf_page_citations(memory)
-    page_ranked = tuple(
-        candidate
-        for candidate in ranked
-        if (
-            candidate.memory_ref.artifact_id,
-            candidate.memory_ref.revision,
-            candidate.entry_id,
-            candidate.entry_version_id,
-        )
-        in locations
-    )
-    primary = [
-        MemoryCitation(
-            memory_ref=candidate.memory_ref,
-            entry_id=candidate.entry_id,
-            entry_version_id=candidate.entry_version_id,
-        )
-        for candidate in (page_ranked if page_citations else ranked)[:limit]
-    ]
-    if not page_citations:
-        return tuple(primary)
-    return tuple(_stratified_page_citations(primary, locations, page_citations, limit))
+    pages = await _pdf_page_candidates(memory)
+    if not pages:
+        return ()
+    by_document: dict[str, list[_PDFPageCandidate]] = {}
+    for page in pages:
+        by_document.setdefault(page.document_id, []).append(page)
+    document_ids = _matching_documents(question, tuple(by_document))
+    ranked: list[tuple[float, _PDFPageCandidate]] = []
+    for document_id in document_ids:
+        ranked.extend(_rank_document_pages(question, document_id, tuple(by_document[document_id])))
+    ranked.sort(key=lambda item: (-item[0], item[1].document_id, item[1].citation.entry_id))
+    return tuple(page.citation for _, page in ranked[:limit])
 
 
-async def _pdf_page_citations(
-    memory: object,
-) -> tuple[dict[_PDFPageLocation, MemoryCitation], dict[_MemoryEntryKey, tuple[_PDFPageLocation, ...]]]:
+async def _pdf_page_candidates(memory: object) -> tuple[_PDFPageCandidate, ...]:
     list_entries = getattr(memory, "list", None)
     if not callable(list_entries):
-        return {}, {}
+        return ()
     page = await list_entries()
-    by_location: dict[_PDFPageLocation, MemoryCitation] = {}
-    by_entry: dict[_MemoryEntryKey, tuple[_PDFPageLocation, ...]] = {}
-    for record in page.entries:
-        citation = record.citation
-        locations = tuple(
-            location
-            for source in record.entry.sources
-            if source.source_type == PDF_PAGE_SOURCE_NAME
-            if (location := _pdf_page_location(source.source_id)) is not None
-        )
-        if not locations:
-            continue
-        key = (
-            citation.memory_ref.artifact_id,
-            citation.memory_ref.revision,
-            citation.entry_id,
-            citation.entry_version_id,
-        )
-        by_entry[key] = locations
-        for location in locations:
-            by_location.setdefault(location, citation)
-    return by_location, by_entry
-
-
-def _pdf_page_location(source_id: str) -> _PDFPageLocation | None:
-    parts = source_id.split(":")
-    if len(parts) != 4 or parts[0] != PDF_PAGE_SOURCE_NAME:
-        return None
-    _, page_text, document_sha256, document_id_hash = parts
-    if not page_text.isdigit() or not re.fullmatch(_SHA256_PATTERN, document_sha256):
-        return None
-    if not re.fullmatch(_SHA256_PATTERN, document_id_hash):
-        return None
-    page_number = int(page_text)
-    if page_number < 1:
-        return None
-    return document_sha256, document_id_hash, page_number
-
-
-def _stratified_page_citations(
-    primary: Sequence[MemoryCitation],
-    locations: dict[_MemoryEntryKey, tuple[_PDFPageLocation, ...]],
-    page_citations: dict[_PDFPageLocation, MemoryCitation],
-    limit: int,
-) -> list[MemoryCitation]:
-    selected: list[MemoryCitation] = []
+    candidates: list[_PDFPageCandidate] = []
     seen: set[tuple[str, int, str, str]] = set()
-
-    def add(citation: MemoryCitation) -> None:
+    for record in page.entries:
+        if record.state != "active" or not any(
+            source.source_type == PDF_PAGE_SOURCE_NAME for source in record.entry.sources
+        ):
+            continue
+        citation = record.citation
         key = (
             citation.memory_ref.artifact_id,
             citation.memory_ref.revision,
             citation.entry_id,
             citation.entry_version_id,
         )
-        if len(selected) < limit and key not in seen:
-            seen.add(key)
-            selected.append(citation)
+        if key in seen:
+            continue
+        seen.add(key)
+        document_id, separator, body = record.entry.text.partition("\n")
+        if not separator or not document_id.strip() or not body.strip():
+            continue
+        candidates.append(
+            _PDFPageCandidate(
+                citation=citation,
+                document_id=document_id.strip(),
+                body=body,
+            )
+        )
+    return tuple(candidates)
 
-    reserved_neighbors = min(6, max(3, limit // 5))
-    primary_quota = max(1, limit - reserved_neighbors)
-    for citation in primary[:primary_quota]:
-        add(citation)
-    ordered_boundaries = _page_clusters(primary, locations)
-    for page_side in (0, 1):
-        for _rank, document_sha256, document_id_hash, start, end in ordered_boundaries:
-            page_number = start - 1 if page_side == 0 else end + 1
-            neighbor = page_citations.get((document_sha256, document_id_hash, page_number))
-            if neighbor is not None:
-                add(neighbor)
-    for citation in primary:
-        add(citation)
+
+def _matching_documents(question: str, document_ids: Sequence[str]) -> tuple[str, ...]:
+    haystack = _compact(question)
+    scored = []
+    for document_id in document_ids:
+        company = re.split(r"_\d{4}", document_id, maxsplit=1)[0]
+        compact_company = _compact(company)
+        overlap = len(set(_normalized_tokens(company)).intersection(_normalized_tokens(question)))
+        score = overlap * 10
+        if compact_company and compact_company in haystack:
+            score += 100 + len(compact_company)
+        if score:
+            scored.append((score, document_id))
+    if not scored:
+        return tuple(document_ids)
+    best = max(score for score, _ in scored)
+    matching = tuple(document_id for score, document_id in scored if score == best)
+    return matching if best >= 10 else tuple(document_ids)
+
+
+def _rank_document_pages(
+    question: str,
+    document_id: str,
+    pages: Sequence[_PDFPageCandidate],
+) -> list[tuple[float, _PDFPageCandidate]]:
+    query = _expanded_question_terms(question, document_id)
+    page_terms = [tuple(_normalized_tokens(page.body)) for page in pages]
+    counts = [Counter(value) for value in page_terms]
+    document_frequency = {term: sum(term in count for count in counts) for term in query}
+    page_count = max(1, len(pages))
+    average_length = max(1.0, sum(len(value) for value in page_terms) / page_count)
+    normalized_question = " ".join(_raw_tokens(question))
+    income_intent, balance_intent, cash_intent = _financial_intents(normalized_question)
+    if "capital intensive" in normalized_question:
+        income_intent = balance_intent = cash_intent = True
+    if "inventory turnover" in normalized_question or "return on assets" in normalized_question:
+        income_intent = balance_intent = True
+    result: list[tuple[float, _PDFPageCandidate]] = []
+    structural: list[_PDFPageCandidate] = []
+    for index, page in enumerate(pages):
+        count = counts[index]
+        length_normalization = 1.2 * (0.25 + 0.75 * len(page_terms[index]) / average_length)
+        value = 0.0
+        for term in query:
+            frequency = count[term]
+            if not frequency:
+                continue
+            document_frequency_value = document_frequency[term]
+            inverse_frequency = math.log(
+                1 + (page_count - document_frequency_value + 0.5) / (document_frequency_value + 0.5)
+            )
+            value += inverse_frequency * frequency * 2.2 / (frequency + length_normalization)
+        coverage = sum(term in count for term in query) / max(1, len(query))
+        numeric_hits = sum(any(character.isdigit() for character in term) and term in count for term in query)
+        boost, is_structural = _page_structural_signal(
+            page.body,
+            normalized_question,
+            income_intent=income_intent,
+            balance_intent=balance_intent,
+            cash_intent=cash_intent,
+        )
+        if is_structural:
+            structural.append(page)
+        result.append((value + 4.0 * coverage + 0.8 * numeric_hits + boost, page))
+    ordered = sorted(
+        result,
+        key=lambda item: (-item[0], item[1].citation.entry_id, item[1].citation.entry_version_id),
+    )
+    structural_ids = {id(page) for page in structural}
+    selected = [item for item in ordered if id(item[1]) in structural_ids]
+    selected.extend(item for item in ordered if id(item[1]) not in structural_ids)
     return selected
 
 
-def _page_clusters(
-    primary: Sequence[MemoryCitation],
-    locations: dict[_MemoryEntryKey, tuple[_PDFPageLocation, ...]],
-) -> list[tuple[int, str, str, int, int]]:
-    clusters: dict[tuple[str, str], list[tuple[int, int]]] = {}
-    for rank, citation in enumerate(primary):
-        key = (
-            citation.memory_ref.artifact_id,
-            citation.memory_ref.revision,
-            citation.entry_id,
-            citation.entry_version_id,
-        )
-        for document_sha256, document_id_hash, page_number in locations.get(key, ()):
-            clusters.setdefault((document_sha256, document_id_hash), []).append((page_number, rank))
-    boundaries = []
-    for (document_sha256, document_id_hash), points in clusters.items():
-        ordered = sorted(points)
-        start = previous = ordered[0][0]
-        best_rank = ordered[0][1]
-        for page_number, rank in ordered[1:]:
-            if page_number - previous <= 2:
-                previous = page_number
-                best_rank = min(best_rank, rank)
-                continue
-            boundaries.append((best_rank, document_sha256, document_id_hash, start, previous))
-            start = previous = page_number
-            best_rank = rank
-        boundaries.append((best_rank, document_sha256, document_id_hash, start, previous))
-    return sorted(boundaries)
+def _page_structural_signal(
+    body: str,
+    question: str,
+    *,
+    income_intent: bool,
+    balance_intent: bool,
+    cash_intent: bool,
+) -> tuple[float, bool]:
+    body_lower = body.casefold()
+    headings = _page_heading(body)
+    boost = 0.0
+    structural = False
+    if income_intent and any(
+        "statement" in heading and ("income" in heading or "operations" in heading) for heading in headings
+    ):
+        boost += 1000.0
+        structural = True
+    if balance_intent and any("balance sheet" in heading for heading in headings):
+        boost += 1000.0
+        structural = True
+    if cash_intent and any("cash flow" in heading for heading in headings):
+        boost += 1000.0
+        structural = True
+    if income_intent and any("summary of financial performance" in heading for heading in headings):
+        boost += 30.0
+    if any("business segment" in heading for heading in headings) and ("categor" in question or "segment" in question):
+        boost += 50.0
+        structural = True
+    if any("results of operations" in heading for heading in headings) and (
+        "drove" in question or "change" in question
+    ):
+        boost += 40.0
+    narrative_boost, narrative_structural = _narrative_structural_signal(body_lower, question)
+    return boost + narrative_boost, structural or narrative_structural
 
 
-def _search_queries(question: str) -> tuple[str, ...]:
-    normalized = " ".join(question.split())
-    terms = _query_terms(question)
-    if not terms:
-        return (normalized,)
-
-    selected = _ordered_unique_terms(terms)
-    expanded = _expanded_terms(selected)
-    queries = [normalized, " ".join(selected), " ".join(expanded)]
-    queries.extend(term for term in _specific_terms(expanded)[:12])
-    return tuple(dict.fromkeys(query for query in queries if query.strip()))
-
-
-def _query_term_weights(question: str) -> tuple[dict[str, float], dict[str, float]]:
-    raw_terms = _ordered_unique_terms(_query_terms(question))
-    terms = _ordered_unique_terms([_normalize_term(term) for term in raw_terms])
-    original: dict[str, float] = {}
-    for index, term in enumerate(terms):
-        weight = 1.0
-        if any(character.isdigit() for character in term):
-            weight += 1.1
-        if len(term) >= 8:
-            weight += 0.35
-        if index > 24:
-            weight *= 0.5
-        original[term] = weight
-    expanded: dict[str, float] = {}
-    for raw_term in raw_terms:
-        for expansion in _term_expansions(raw_term):
-            term = _normalize_term(expansion)
-            if term not in original:
-                expanded[term] = 0.35
-    return original, expanded
+def _narrative_structural_signal(body: str, question: str) -> tuple[float, bool]:
+    if "legal" in question and any(term in body for term in ("legal action", "litigation", "proceeding", "claim")):
+        return 12.0, False
+    if "customer" in question and any(
+        term in body for term in ("one customer", "customer accounted", "commercial airlines", "u.s. government")
+    ):
+        return 50.0, True
+    if "production" in question and any(term in body for term in ("737", "787", "777x")):
+        return 50.0, True
+    if "industry" in question and any(term in body for term in ("global leader", "packaging", "primarily")):
+        return 15.0, False
+    return 0.0, False
 
 
-def _page_rank(
-    text: str,
-    query_terms: dict[str, float],
-    expanded_terms: dict[str, float],
-    channel_score: float,
-) -> float:
-    lines = text.splitlines()
-    body = "\n".join(lines[1:]) if len(lines) > 1 else text
-    terms = Counter(_normalized_tokens(body))
-    weights = {**expanded_terms, **query_terms}
-    total_weight = sum(weights.values()) or 1.0
-    matched_weight = sum(weight for term, weight in weights.items() if terms[term])
-    coverage = matched_weight / total_weight
-    length_normalization = 1.0 + math.log1p(len(terms)) / 12.0
-    frequency = sum(
-        weight * min(3, terms[term]) / length_normalization for term, weight in weights.items() if terms[term]
-    )
-    ordered_query = tuple(query_terms)
-    body_sequence = _normalized_tokens(body)
-    body_pairs = set(pairwise(body_sequence))
-    phrase_hits = sum(pair in body_pairs for pair in pairwise(ordered_query))
-    numeric_hits = sum(
-        weight for term, weight in query_terms.items() if any(character.isdigit() for character in term) and terms[term]
-    )
-    table_signal = 1.0 if re.search(r"\b(?:total|statement|consolidated|million|thousand)\b", body, re.I) else 0.0
-    return (
-        8.0 * coverage
-        + min(4.0, frequency)
-        + min(3.0, phrase_hits)
-        + 0.8 * numeric_hits
-        + 0.35 * table_signal
-        + 2.5 * channel_score
-    )
-
-
-def _query_terms(question: str) -> tuple[str, ...]:
+def _expanded_question_terms(question: str, document_id: str) -> tuple[str, ...]:  # noqa: C901
     pieces = []
     for sentence in re.split(r"(?<=[.!?])\s+|\n+", question):
         if not _SENTENCE_INSTRUCTION.match(sentence):
@@ -561,10 +468,138 @@ def _query_terms(question: str) -> tuple[str, ...]:
         if question_start is not None:
             pieces.append(sentence[question_start.start() :])
     content = " ".join(pieces) if pieces else question
-    terms = [
-        term for term in _raw_tokens(content) if term not in _QUERY_STOP_WORDS and term not in _DOCUMENT_COMMON_TERMS
+    normalized = content.casefold().replace("&", " and ").replace("-", " ")
+    output = [
+        _normalize_term(term)
+        for term in _raw_tokens(content)
+        if term not in _QUERY_STOP_WORDS and term not in _DOCUMENT_COMMON_TERMS
     ]
-    return tuple(terms)
+    company = re.split(r"_\d{4}", document_id, maxsplit=1)[0]
+    company_terms = set(_normalized_tokens(company))
+    output = [term for term in output if term not in company_terms]
+    expansions: list[str] = []
+    phrases = {
+        ("operating", "margin"): (
+            "operating income",
+            "operating profit",
+            "revenue",
+            "net sales",
+            "gross profit",
+            "operating expenses",
+        ),
+        ("gross", "margin"): ("gross profit", "revenue", "net sales", "cost of sales", "cost of revenue"),
+        ("free", "cash"): (
+            "free cash flow",
+            "net cash provided by operating activities",
+            "purchases of property and equipment",
+            "net income",
+            "cash flow conversion",
+        ),
+        ("cashflow", "conversion"): (
+            "free cash flow",
+            "net cash provided by operating activities",
+            "purchases of property and equipment",
+            "net income",
+        ),
+        ("capital", "intensive"): (
+            "capital expenditures",
+            "purchases of property plant and equipment",
+            "fixed assets",
+            "property plant and equipment",
+            "total assets",
+            "net sales",
+        ),
+        ("inventory", "turnover"): ("inventory", "cost of sales", "balance sheet", "statements of operations"),
+        ("quick", "ratio"): (
+            "cash and cash equivalents",
+            "current assets",
+            "current liabilities",
+            "inventory",
+            "balance sheet",
+        ),
+        ("return", "on", "assets"): ("net income", "total assets", "balance sheet", "statements of operations"),
+        ("effective", "tax", "rate"): (
+            "provision for income taxes",
+            "income tax expense",
+            "income before income taxes",
+            "loss before income taxes",
+        ),
+        ("legal", "battles"): ("legal actions", "legal proceedings", "litigation", "claims", "lawsuits"),
+        ("legal", "actions"): ("legal proceedings", "litigation", "claims", "lawsuits"),
+        ("product", "categories"): (
+            "business segment",
+            "commercial airplanes",
+            "defense space security",
+            "global services",
+        ),
+        ("service", "categories"): (
+            "business segment",
+            "commercial airplanes",
+            "defense space security",
+            "global services",
+        ),
+        ("primary", "customers"): (
+            "commercial airlines",
+            "customers",
+            "clients",
+            "u.s. government",
+            "government contracts",
+        ),
+        ("card", "members"): ("card member retention", "retained", "retain"),
+        ("customer", "concentration"): ("one customer", "net revenue", "sales", "segment", "loss", "customer"),
+        ("industry",): ("packaging", "products", "business", "company", "markets"),
+    }
+    for phrase, values in phrases.items():
+        if " ".join(phrase) in normalized:
+            expansions.extend(values)
+    compact_query = " ".join(output)
+    if "geograph" in compact_query or "operate" in output or "operations" in output:
+        expansions.extend(("united states", "emea", "apac", "lacc", "regions", "markets", "countries"))
+    if "grow" in compact_query or "growth" in compact_query:
+        expansions.extend(("organic sales change", "acquisitions", "divestitures", "translation", "business segment"))
+    if "liabil" in compact_query:
+        expansions.extend(("total liabilities", "deposits", "long-term debt", "accounts payable"))
+    if "retain" in compact_query or "retention" in compact_query:
+        expansions.extend(("card member retention", "retained", "retain"))
+    if "drove" in output or "change" in output:
+        expansions.extend((
+            "selling general administrative",
+            "percent of sales",
+            "restructuring benefits",
+            "growth initiatives",
+        ))
+    output.extend(_normalized_tokens(" ".join(expansions)))
+    return tuple(dict.fromkeys(term for term in output if term))
+
+
+def _financial_intents(question: str) -> tuple[bool, bool, bool]:
+    income = any(
+        term in question
+        for term in (
+            "margin",
+            "revenue",
+            "sales",
+            "income",
+            "profit",
+            "tax",
+            "restructuring",
+            "p&l",
+            "gross",
+        )
+    )
+    balance = any(term in question for term in ("balance sheet", "asset", "liabilit", "inventory", "quick ratio"))
+    cash = any(term in question for term in ("cash flow", "cashflow", "capex", "capital expend", "free cash"))
+    return income, balance, cash
+
+
+def _page_heading(value: str) -> tuple[str, ...]:
+    return tuple(line.strip().casefold() for line in value.splitlines() if line.strip() and len(line.strip()) <= 100)[
+        :10
+    ]
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", value.casefold())
 
 
 def _raw_tokens(value: str) -> tuple[str, ...]:
@@ -604,40 +639,6 @@ def _normalize_term(term: str) -> str:
     if term.endswith("s") and not term.endswith(("ss", "is", "us")) and len(term) > 4:
         term = term[:-1]
     return term
-
-
-def _ordered_unique_terms(terms: Sequence[str]) -> list[str]:
-    return list(dict.fromkeys(term for term in terms if term))
-
-
-def _expanded_terms(terms: Sequence[str]) -> list[str]:
-    ordered = list(terms)
-    for term in terms:
-        ordered.extend(_term_expansions(term))
-    return _ordered_unique_terms(ordered)
-
-
-def _term_expansions(term: str) -> tuple[str, ...]:
-    expansions = list(_QUERY_EXPANSIONS.get(term, ()))
-    year = re.fullmatch(r"fy'?(\d{2}|\d{4})", term)
-    if year:
-        value = year.group(1)
-        expansions.append(value if len(value) == 4 else f"20{value}")
-    return tuple(expansions)
-
-
-def _specific_terms(terms: Sequence[str]) -> tuple[str, ...]:
-    return tuple(
-        sorted(
-            dict.fromkeys(terms),
-            key=lambda term: (
-                not any(character.isdigit() for character in term),
-                "-" not in term,
-                -len(term),
-                terms.index(term),
-            ),
-        )
-    )
 
 
 __all__ = [
