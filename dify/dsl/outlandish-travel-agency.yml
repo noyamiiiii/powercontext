@@ -78,7 +78,7 @@ workflow:
       id: start-to-pack-recall
       source: start
       sourceHandle: source
-      target: pack-recall
+      target: pack_recall
       targetHandle: target
       type: custom
       zIndex: 0
@@ -88,9 +88,9 @@ workflow:
         sourceType: code
         targetType: http-request
       id: pack-recall-to-http-recall
-      source: pack-recall
+      source: pack_recall
       sourceHandle: source
-      target: http-recall
+      target: http_recall
       targetHandle: target
       type: custom
       zIndex: 0
@@ -100,9 +100,9 @@ workflow:
         sourceType: http-request
         targetType: llm
       id: http-recall-to-story-llm
-      source: http-recall
+      source: http_recall
       sourceHandle: source
-      target: story-llm
+      target: story_llm
       targetHandle: target
       type: custom
       zIndex: 0
@@ -112,9 +112,9 @@ workflow:
         sourceType: llm
         targetType: code
       id: story-llm-to-pack-save
-      source: story-llm
+      source: story_llm
       sourceHandle: source
-      target: pack-save
+      target: pack_save
       targetHandle: target
       type: custom
       zIndex: 0
@@ -124,9 +124,9 @@ workflow:
         sourceType: code
         targetType: http-request
       id: pack-save-to-http-save
-      source: pack-save
+      source: pack_save
       sourceHandle: source
-      target: http-save
+      target: http_save
       targetHandle: target
       type: custom
       zIndex: 0
@@ -136,7 +136,7 @@ workflow:
         sourceType: http-request
         targetType: answer
       id: http-save-to-answer
-      source: http-save
+      source: http_save
       sourceHandle: source
       target: answer
       targetHandle: target
@@ -194,7 +194,7 @@ workflow:
           - query
           variable: move
       height: 110
-      id: pack-recall
+      id: pack_recall
       position:
         x: 324
         y: 270
@@ -211,7 +211,7 @@ workflow:
           config: null
           type: no-auth
         body:
-          data: '{{#pack-recall.body#}}'
+          data: '{{#pack_recall.body#}}'
           type: json
         desc: Recall this Dify user's previous story state from PowerContext.
         headers: 'Content-Type:application/json'
@@ -236,7 +236,7 @@ workflow:
         url: 'http://host.docker.internal:8766/v1/recall'
         variables: []
       height: 110
-      id: http-recall
+      id: http_recall
       position:
         x: 628
         y: 270
@@ -281,7 +281,7 @@ workflow:
             - 故事轻松、有趣、适龄，不生成血腥、色情或针对现实人物的伤害内容。
 
             以下是 PowerContext 为本玩家召回的历史记忆 JSON。只引用其中真实存在的内容；没有记忆时直接开始新故事，不要编造“你以前说过”：
-            {{#http-recall.body#}}
+            {{#http_recall.body#}}
 
             输出要求：
             1. 先写“【场景】”，描写当前地点、人物动作和正在发生的危机。
@@ -302,7 +302,7 @@ workflow:
         vision:
           enabled: false
       height: 110
-      id: story-llm
+      id: story_llm
       position:
         x: 932
         y: 270
@@ -348,7 +348,7 @@ workflow:
           - query
           variable: move
         - value_selector:
-          - story-llm
+          - story_llm
           - text
           variable: story
         - value_selector:
@@ -356,7 +356,7 @@ workflow:
           - workflow_run_id
           variable: turn_id
       height: 110
-      id: pack-save
+      id: pack_save
       position:
         x: 1236
         y: 270
@@ -373,7 +373,7 @@ workflow:
           config: null
           type: no-auth
         body:
-          data: '{{#pack-save.body#}}'
+          data: '{{#pack_save.body#}}'
           type: json
         desc: Save the player choice and generated scene to PowerContext.
         headers: 'Content-Type:application/json'
@@ -398,7 +398,7 @@ workflow:
         url: 'http://host.docker.internal:8766/v1/remember'
         variables: []
       height: 110
-      id: http-save
+      id: http_save
       position:
         x: 1540
         y: 270
@@ -412,7 +412,7 @@ workflow:
       width: 244
     - data:
         answer: |
-          {{#story-llm.text#}}
+          {{#story_llm.text#}}
 
           ---
           *阿拐已经把这一回合写进旅行社档案。新开对话继续提问时，它会先召回这次选择。*

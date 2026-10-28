@@ -1,0 +1,17 @@
+services:
+  memory-bridge:
+    build:
+      context: ./bridge
+    container_name: powercontext-memory-bridge
+    ports:
+      - "8766:8766"
+    environment:
+      STORY_MEMORY_HOST: 0.0.0.0
+      STORY_MEMORY_PORT: 8766
+      STORY_MEMORY_DATA_DIR: /data
+    volumes:
+      - memory-bridge-data:/data
+    restart: unless-stopped
+
+volumes:
+  memory-bridge-data:

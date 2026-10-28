@@ -31,6 +31,30 @@ PowerContext 不是连接演示。每个 Dify 用户都有独立 Scope；每回�
 
 ## 启动 Bridge
 
+推荐使用 Docker，Dify 和 Bridge 可以运行在同一台机器上：
+
+```powershell
+cd dify
+docker compose up -d --build
+docker compose ps
+```
+
+查看日志：
+
+```powershell
+docker compose logs -f memory-bridge
+```
+
+停止 Bridge：
+
+```powershell
+docker compose down
+```
+
+PowerContext 数据保存在 Docker volume `dify_memory-bridge-data` 中。容器对外暴露 `8766`，因此 Docker 版 Dify 可以继续使用 DSL 默认地址 `host.docker.internal:8766`。
+
+如果只想直接运行 Python 服务：
+
 ```powershell
 cd dify/bridge
 uv sync --extra dev
@@ -64,6 +88,8 @@ Invoke-RestMethod http://127.0.0.1:8766/health
 6. 发布 Chatflow，打开应用。
 
 Linux Docker 未提供 `host.docker.internal` 时，需要给 Dify API/Worker 容器添加 host-gateway，或把 URL 改成 Dify 能访问到的主机 IP。
+
+如果旧版 DSL 的“返回故事”节点直接显示字面量 `{{#story-llm.text#}}`，请删除该旧应用并重新导入本仓库更新后的 DSL。新版节点 ID 只使用字母、数字和下划线，符合 Dify 运行时的变量解析规则。
 
 ## 验证样例
 
