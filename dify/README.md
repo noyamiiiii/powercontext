@@ -106,6 +106,8 @@ Linux Docker 未提供 `host.docker.internal` 时，需要给 Dify API/Worker �
 
 完整步骤和预期现象见 [samples/verification.md](samples/verification.md)。
 
+Dify 预览和工作流运行截图保存在 [docs/evidence/README.md](docs/evidence/README.md)。
+
 启动 Bridge 后也可以直接执行自动验证：
 
 ```powershell
