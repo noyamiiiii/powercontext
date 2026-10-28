@@ -1,0 +1,23 @@
+{
+  "environment": {
+    "browser": "Headless Chrome 156.0.8078.48",
+    "platform": "Windows",
+    "webgpuAvailable": false,
+    "selectedBackend": "wasm",
+    "selectedDtype": "INT8/q8"
+  },
+  "model": {
+    "id": "onnx-community/bge-small-zh-v1.5-ONNX",
+    "dimensions": 512,
+    "weightBytes": 23942210
+  },
+  "measurements": {
+    "coldModelLoadSamplesMs": [8070, 9780],
+    "coldModelLoadMedianMs": 8925,
+    "warmModelLoadSamplesMs": [162, 214],
+    "warmModelLoadMedianMs": 188,
+    "threeDocumentEmbeddingMs": 32.7,
+    "singleQueryEmbeddingMs": 23
+  },
+  "note": "The UI records and exports fresh per-run measurements. seekdb timings are populated after the Docker database is running."
+}

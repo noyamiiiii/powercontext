@@ -1,0 +1,35 @@
+{
+  "modelId": "onnx-community/bge-small-zh-v1.5-ONNX",
+  "modelRevision": "9507db33464b5da99a532ac26b2a251767cbc62b",
+  "evaluation": {
+    "documents": 12,
+    "queries": 6,
+    "metric": "Recall@3 and MRR on a fixed Chinese retrieval set"
+  },
+  "results": [
+    {
+      "dtype": "fp32",
+      "loadMs": 10391.1488,
+      "embeddingMs": 65.6927,
+      "recallAt3": 1.0,
+      "mrr": 1.0
+    },
+    {
+      "dtype": "q8",
+      "loadMs": 4265.982,
+      "embeddingMs": 40.58,
+      "recallAt3": 1.0,
+      "mrr": 1.0
+    }
+  ],
+  "weightBytes": {
+    "fp32": 94806745,
+    "fp16": 47424911,
+    "q8": 23942210
+  },
+  "compressionRatio": {
+    "fp16": 1.9991,
+    "q8": 3.9598
+  },
+  "reproduce": "npm run benchmark:models"
+}

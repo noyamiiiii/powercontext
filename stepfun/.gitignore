@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+.tmp/
+test-results/
+.seekdb/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+*.tsbuildinfo
